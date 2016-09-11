@@ -1,0 +1,3421 @@
+     1                                 %line 1+1 main.asm
+     2                                 
+     3                                 %line 3+1 io.asm
+     4                                 
+     5                                 floatstrlen equ 255
+     6                                 
+     7                                 [section .data]
+     8                                 
+     9 00000000 0A000000                divider dd 10
+    10                                 
+    11 00000004 00000000                negativeCheck dd 0
+    12                                 
+    13 00000008 00000000                logCheck dd 0
+    14                                 
+    15                                 [section .bss]
+    16                                 
+    17 00000000 <gap>                   charinput resb 1
+    18                                 
+    19 00000001 <gap>                   textinput resb 256
+    20                                 
+    21 00000101 <gap>                   ltextinput resd 1
+    22                                 
+    23 00000105 <gap>                   _printFloatStr resb floatstrlen
+    24                                 
+    25                                 [section .text]
+    26                                 
+    27                                 inputtext :
+    28                                 
+    29                                 
+    30 00000000 B803000000              mov eax, 3
+    31 00000005 BB00000000              mov ebx, 0
+    32 0000000A B9[00000000]            mov ecx, charinput
+    33 0000000F BA01000000              mov edx, 1
+    34 00000014 CD80                    int 0x80
+    35                                 
+    36 00000016 C3                      ret
+    37                                 
+    38                                 
+    39                                 inputstring :
+    40                                 
+    41 00000017 C705[00000000]0000-     mov dword [ltextinput], 0
+    42 00000017 0000               
+    43                                 
+    44                                 
+    45                                 loopinputtext :
+    46                                 
+    47 00000021 813D[00000000]FF00-     cmp dword [ltextinput], 255
+    48 00000021 0000               
+    49 0000002B 7439                    je inputstringexit
+    50                                 
+    51 0000002D E8C9FFFFFF              call inputtext
+    52                                 
+    53 00000032 803D[00000000]20        cmp byte [charinput], ' '
+    54 00000039 742B                    je inputstringexit
+    55                                 
+    56 0000003B 803D[00000000]0A        cmp byte [charinput], 10
+    57 00000042 7422                    je inputstringexit
+    58                                 
+    59 00000044 803D[00000000]00        cmp byte [charinput], 0
+    60 0000004B 7419                    je inputstringexit
+    61                                 
+    62 0000004D 8B0D[00000000]          mov ecx, [ltextinput]
+    63 00000053 8A1D[00000000]          mov bl, [charinput]
+    64 00000059 8899[00000000]          mov byte [textinput + ecx], bl
+    65                                 
+    66 0000005F 8305[00000000]01        add dword [ltextinput], 1
+    67                                 
+    68 00000066 EBB7                    jmp loopinputtext
+    69                                 
+    70                                 
+    71                                 inputstringexit :
+    72                                 
+    73 00000068 8B0D[00000000]          mov ecx, [ltextinput]
+    74 0000006E C681[00000000]00        mov byte [textinput + ecx], 0
+    75                                 
+    76 00000075 B8[00000000]            mov eax, textinput
+    77 0000007A 8B1D[00000000]          mov ebx, [ltextinput]
+    78                                 
+    79 00000080 C3                      ret
+    80                                 
+    81                                 copystring :
+    82                                 
+    83 00000081 8A10                    mov dl, [eax]
+    84 00000083 8813                    mov byte [ebx], dl
+    85                                 
+    86 00000085 803800                  cmp byte [eax], 0
+    87 00000088 7406                    je copystringexit
+    88                                 
+    89 0000008A 83C001                  add eax, 1
+    90 0000008D 83C301                  add ebx, 1
+    91                                 
+    92 00000090 EBED                    jmp copystring
+    93                                 
+    94                                 copystringexit :
+    95                                 
+    96 00000092 C3                      ret
+    97                                 
+    98                                 
+    99                                 compare :
+   100                                 
+   101                                 compareloop :
+   102                                 
+   103 00000093 8A13                    mov dl, [ebx]
+   104 00000095 3A10                    cmp dl, [eax]
+   105 00000097 7512                    jne false
+   106                                 
+   107 00000099 803800                  cmp byte [eax], 0
+   108 0000009C 7406                    je true
+   109                                 
+   110 0000009E 83C001                  add eax, 1
+   111 000000A1 83C301                  add ebx, 1
+   112                                 
+   113 000000A4 EBEB                    jmp compareloop
+   114                                 
+   115                                 true :
+   116 000000A6 B901000000              mov ecx, 1
+   117 000000AB EB05                    jmp finish
+   118                                 
+   119                                 false :
+   120 000000AD B900000000              mov ecx, 0
+   121 000000B2 EBFE                    jmp finish
+   122                                 
+   123                                 finish :
+   124                                 
+   125 000000B4 C3                      ret
+   126                                 
+   127                                 printFloat :
+   128                                 
+   129 000000B5 B9FF000000              mov ecx, floatstrlen
+   130 000000BA 83E901                  sub ecx, 1
+   131 000000BD C705[00000000]0100-     mov dword [negativeCheck], 1
+   132 000000BD 0000               
+   133                                 
+   134 000000C7 83F800                  cmp eax, 0
+   135 000000CA 750D                    jne _negativeCheck
+   136                                 
+   137 000000CC C681[00000000]30        mov byte [_printFloatStr + ecx], '0'
+   138 000000D3 83E901                  sub ecx, 1
+   139 000000D6 E9E1000000              jmp _printFloat
+   140                                 
+   141                                 _negativeCheck :
+   142                                 
+   143 000000DB 83F800                  cmp eax, 0
+   144 000000DE 7F16                    jg _printFloatLoop
+   145                                 
+   146 000000E0 C705[00000000]FFFF-     mov dword [negativeCheck], -1
+   147 000000E0 FFFF               
+   148 000000EA BA00000000              mov edx, 0
+   149 000000EF 89C0                    mov eax, eax
+   150                                 
+   151 000000F1 99                      cdq
+   152 000000F2 F72D[00000000]          imul dword [negativeCheck]
+   153                                 
+   154                                 _printFloatLoop :
+   155                                 
+   156 000000F8 83F80A                  cmp eax, 10
+   157 000000FB 7C05                    jl _1digit
+   158                                 
+   159 000000FD 83F864                  cmp eax, 100
+   160 00000100 7C31                    jl _2digit
+   161                                 
+   162 00000102 EB67                    jmp _more
+   163                                 
+   164                                 _1digit :
+   165                                 
+   166 00000104 89C2                    mov edx, eax
+   167                                 
+   168 00000106 80C230                  add dl, '0'
+   169 00000109 8891[00000000]          mov byte[_printFloatStr+ ecx], dl
+   170 0000010F 83E901                  sub ecx, 1
+   171                                 
+   172 00000112 C681[00000000]30        mov byte[_printFloatStr+ ecx], '0'
+   173 00000119 83E901                  sub ecx, 1
+   174                                 
+   175 0000011C C681[00000000]2E        mov byte[_printFloatStr+ ecx], '.'
+   176 00000123 83E901                  sub ecx, 1
+   177                                 
+   178 00000126 C681[00000000]30        mov byte[_printFloatStr+ ecx], '0'
+   179 0000012D 83E901                  sub ecx, 1
+   180                                 
+   181 00000130 E987000000              jmp _printFloat
+   182                                 
+   183                                 _2digit :
+   184                                 
+   185 00000135 BA00000000              mov edx, 0
+   186 0000013A F735[00000000]          div dword[divider]
+   187                                 
+   188 00000140 80C230                  add dl, '0'
+   189 00000143 8891[00000000]          mov byte[_printFloatStr+ ecx], dl
+   190 00000149 83E901                  sub ecx, 1
+   191                                 
+   192 0000014C 0430                    add al, '0'
+   193 0000014E 8881[00000000]          mov byte[_printFloatStr+ ecx], al
+   194 00000154 83E901                  sub ecx, 1
+   195                                 
+   196 00000157 C681[00000000]2E        mov byte[_printFloatStr+ ecx], '.'
+   197 0000015E 83E901                  sub ecx, 1
+   198                                 
+   199 00000161 C681[00000000]30        mov byte[_printFloatStr+ ecx], '0'
+   200 00000168 83E901                  sub ecx, 1
+   201                                 
+   202 0000016B EB52                    jmp _printFloat
+   203                                 
+   204                                 _more :
+   205                                 
+   206 0000016D BA00000000              mov edx, 0
+   207 00000172 F735[00000000]          div dword[divider]
+   208                                 
+   209 00000178 80C230                  add dl, '0'
+   210 0000017B 8891[00000000]          mov byte[_printFloatStr+ ecx], dl
+   211 00000181 83E901                  sub ecx, 1
+   212                                 
+   213 00000184 BA00000000              mov edx, 0
+   214 00000189 F735[00000000]          div dword[divider]
+   215                                 
+   216 0000018F 80C230                  add dl, '0'
+   217 00000192 8891[00000000]          mov byte[_printFloatStr+ ecx], dl
+   218 00000198 83E901                  sub ecx, 1
+   219                                 
+   220 0000019B C681[00000000]2E        mov byte[_printFloatStr+ ecx], '.'
+   221 000001A2 83E901                  sub ecx, 1
+   222                                 
+   223                                 _Frontcomma :
+   224                                 
+   225 000001A5 BA00000000              mov edx, 0
+   226 000001AA F735[00000000]          div dword [divider]
+   227                                 
+   228 000001B0 80C230                  add dl, '0'
+   229 000001B3 8891[00000000]          mov byte [_printFloatStr + ecx], dl
+   230                                 
+   231 000001B9 83E901                  sub ecx, 1
+   232                                 
+   233 000001BC 83F800                  cmp eax, 0
+   234 000001BF 75E2                    jne _Frontcomma
+   235                                 
+   236                                 _printFloat :
+   237                                 
+   238 000001C1 833D[00000000]FF        cmp dword [negativeCheck], -1
+   239 000001C8 7508                    jne _printFloatNext
+   240                                 
+   241 000001CA C681[00000000]2D        mov byte [_printFloatStr + ecx], '-'
+   242 000001D1 83E901                  sub ecx, 1
+   243                                 
+   244                                 _printFloatNext :
+   245                                 
+   246 000001D4 BAFF000000              mov edx, floatstrlen
+   247 000001D9 29CA                    sub edx, ecx
+   248 000001DB 83EA01                  sub edx, 1
+   249                                 
+   250 000001DE 81C1[00000000]          add ecx, _printFloatStr
+   251 000001E4 83C101                  add ecx, 1
+   252                                 
+   253 000001E7 833D[00000000]01        cmp dword[logCheck], 1
+   254 000001EE 740C                    je _printToLog
+   255                                 
+   256 000001F0 B804000000              mov eax, 4
+   257 000001F5 BB01000000              mov ebx, 1
+   258 000001FA CD80                    int 0x80
+   259                                 
+   260 000001FC EB15                    jmp _printFloatExit
+   261                                 
+   262                                 _printToLog
+   263                                 
+   264 000001FE B804000000              mov eax, 4
+   265 00000203 8B1D[00000000]          mov ebx, [isilog]
+   266 00000209 CD80                    int 0x80
+   267                                 
+   268 0000020B C705[00000000]0000-     mov dword[logCheck], 0
+   269 0000020B 0000               
+   270                                 
+   271                                 _printFloatExit :
+   272                                 
+   273 00000215 C3                      ret
+   274                                 
+   275                                 logStr :
+   276                                 
+   277 00000216 89C1                    mov ecx, eax
+   278                                 
+   279                                 _logStrLoop :
+   280                                 
+   281 00000218 803900                  cmp byte [ecx], 0
+   282 0000021B 7415                    je _logStrExit
+   283                                 
+   284 0000021D 8B1D[00000000]          mov ebx, [isilog]
+   285 00000223 B804000000              mov eax, 4
+   286 00000228 BA01000000              mov edx, 1
+   287 0000022D CD80                    int 0x80
+   288                                 
+   289 0000022F 83C101                  add ecx, 1
+   290                                 
+   291 00000232 EBE2                    jmp _logStrLoop
+   292                                 
+   293                                 _logStrExit :
+   294                                 
+   295 00000234 C3                      ret
+   296                                 
+   297                                 %line 3+1 main.asm
+   298                                 
+   299                                 
+   300                                 %line 3+1 basic.asm
+   301                                 
+   302                                 [section .data]
+   303                                 
+   304                                 [section .bss]
+   305                                 
+   306                                 [section .text]
+   307                                 
+   308                                 f_basic :
+   309                                 
+   310 00000235 B8[00000000]            mov eax, plus
+   311 0000023A BB[00000000]            mov ebx, function
+   312 0000023F E84AFEFFFF              call compare
+   313 00000244 83F901                  cmp ecx, 1
+   314 00000247 744C                    je f_plus
+   315                                 
+   316 00000249 B8[00000000]            mov eax, minus
+   317 0000024E BB[00000000]            mov ebx, function
+   318 00000253 E836FEFFFF              call compare
+   319 00000258 83F901                  cmp ecx, 1
+   320 0000025B 0F848A000000            je f_minus
+   321                                 
+   322 00000261 B8[00000000]            mov eax, divide
+   323 00000266 BB[00000000]            mov ebx, function
+   324 0000026B E81EFEFFFF              call compare
+   325 00000270 83F901                  cmp ecx, 1
+   326 00000273 0F84CC000000            je f_divide
+   327                                 
+   328 00000279 B8[00000000]            mov eax, multiply
+   329 0000027E BB[00000000]            mov ebx, function
+   330 00000283 E806FEFFFF              call compare
+   331 00000288 83F901                  cmp ecx, 1
+   332 0000028B 0F841C010000            je f_multiply
+   333                                 
+   334 00000291 B801000000              mov eax, 1
+   335                                 
+   336 00000296 C3                      ret
+   337                                 
+   338                                 f_plus :
+   339                                 
+   340 00000297 E8910D0000              call scanNum
+   341 0000029C A3[00000000]            mov dword [num1], eax
+   342                                 
+   343 000002A1 E8870D0000              call scanNum
+   344 000002A6 A3[00000000]            mov dword [num2], eax
+   345                                 
+   346 000002AB E8CC180000              call _result
+   347                                 
+   348 000002B0 A1[00000000]            mov eax, [num1]
+   349 000002B5 0305[00000000]          add eax, [num2]
+   350                                 
+   351 000002BB A3[00000000]            mov dword[result1], eax
+   352 000002C0 BB01000000              mov ebx, 1
+   353 000002C5 E8D40D0000              call printNum
+   354                                 
+   355 000002CA E8A60E0000              call ask_for_log
+   356                                 
+   357 000002CF B8[00000000]            mov eax, yes
+   358 000002D4 BB[00000000]            mov ebx, question
+   359                                 
+   360 000002D9 E8B0FDFFFF              call compare
+   361 000002DE 83F901                  cmp ecx, 1
+   362 000002E1 0F85B6090000            jne _ret
+   363                                 
+   364 000002E7 E8F8110000              call _log_2inputInt
+   365                                 
+   366 000002EC E9AD090000              jmp _ret
+   367                                 
+   368                                 f_minus :
+   369                                 
+   370 000002F1 E8370D0000              call scanNum
+   371 000002F6 A3[00000000]            mov dword [num1], eax
+   372                                 
+   373 000002FB E82D0D0000              call scanNum
+   374 00000300 A3[00000000]            mov dword [num2], eax
+   375                                 
+   376 00000305 E872180000              call _result
+   377                                 
+   378 0000030A A1[00000000]            mov eax, [num1]
+   379 0000030F 2B05[00000000]          sub eax, [num2]
+   380                                 
+   381 00000315 A3[00000000]            mov dword[result1], eax
+   382 0000031A BB01000000              mov ebx, 1
+   383 0000031F E87A0D0000              call printNum
+   384                                 
+   385 00000324 E84C0E0000              call ask_for_log
+   386                                 
+   387 00000329 B8[00000000]            mov eax, yes
+   388 0000032E BB[00000000]            mov ebx, question
+   389                                 
+   390 00000333 E856FDFFFF              call compare
+   391 00000338 83F901                  cmp ecx, 1
+   392 0000033B 0F855C090000            jne _ret
+   393                                 
+   394 00000341 E89E110000              call _log_2inputInt
+   395                                 
+   396 00000346 E953090000              jmp _ret
+   397                                 
+   398                                 f_divide :
+   399                                 
+   400 0000034B E8DD0C0000              call scanNum
+   401 00000350 A3[00000000]            mov dword [num1], eax
+   402                                 
+   403 00000355 E8D30C0000              call scanNum
+   404 0000035A A3[00000000]            mov dword [num2], eax
+   405                                 
+   406 0000035F E818180000              call _result
+   407                                 
+   408 00000364 BA00000000              mov edx, 0
+   409 00000369 A1[00000000]            mov eax, [num1]
+   410 0000036E BB64000000              mov ebx, 100
+   411 00000373 F7E3                    mul ebx
+   412                                 
+   413 00000375 8B0D[00000000]          mov ecx, [num2]
+   414 0000037B F7F9                    idiv ecx
+   415                                 
+   416 0000037D A3[00000000]            mov dword[result1], eax
+   417 00000382 BB01000000              mov ebx, 1
+   418 00000387 E824FDFFFF              call printFloat
+   419                                 
+   420 0000038C E8E40D0000              call ask_for_log
+   421                                 
+   422 00000391 B8[00000000]            mov eax, yes
+   423 00000396 BB[00000000]            mov ebx, question
+   424                                 
+   425 0000039B E8EEFCFFFF              call compare
+   426 000003A0 83F901                  cmp ecx, 1
+   427 000003A3 0F85F4080000            jne _ret
+   428                                 
+   429 000003A9 E856120000              call _log_2inputFloat
+   430                                 
+   431 000003AE E9EB080000              jmp _ret
+   432                                 
+   433                                 f_multiply :
+   434                                 
+   435 000003B3 E8750C0000              call scanNum
+   436 000003B8 A3[00000000]            mov dword [num1], eax
+   437                                 
+   438 000003BD E86B0C0000              call scanNum
+   439 000003C2 A3[00000000]            mov dword [num2], eax
+   440                                 
+   441 000003C7 E8B0170000              call _result
+   442                                 
+   443 000003CC A1[00000000]            mov eax, [num1]
+   444 000003D1 8B1D[00000000]          mov ebx, [num2]
+   445 000003D7 F7E3                    mul ebx
+   446                                 
+   447 000003D9 A3[00000000]            mov dword[result1], eax
+   448 000003DE BB01000000              mov ebx, 1
+   449 000003E3 E8B60C0000              call printNum
+   450                                 
+   451 000003E8 E8880D0000              call ask_for_log
+   452                                 
+   453 000003ED B8[00000000]            mov eax, yes
+   454 000003F2 BB[00000000]            mov ebx, question
+   455                                 
+   456 000003F7 E892FCFFFF              call compare
+   457 000003FC 83F901                  cmp ecx, 1
+   458 000003FF 0F8598080000            jne _ret
+   459                                 
+   460 00000405 E8DA100000              call _log_2inputInt
+   461                                 
+   462 0000040A E98F080000              jmp _ret
+   463                                 
+   464                                 %line 6+1 main.asm
+   465                                 
+   466                                 
+   467                                 %line 3+1 area_&_volume.asm
+   468                                 
+   469                                 [section .data]
+   470                                 
+   471                                 [section .bss]
+   472                                 
+   473                                 [section .text]
+   474                                 
+   475                                 f_area :
+   476                                 
+   477 0000040F B8[00000000]            mov eax, triangle
+   478 00000414 BB[00000000]            mov ebx, function
+   479 00000419 E870FCFFFF              call compare
+   480 0000041E 83F901                  cmp ecx, 1
+   481 00000421 747C                    je f_triangle
+   482                                 
+   483 00000423 B8[00000000]            mov eax, diamond
+   484 00000428 BB[00000000]            mov ebx, function
+   485 0000042D E85CFCFFFF              call compare
+   486 00000432 83F901                  cmp ecx, 1
+   487 00000435 0F84E2010000            je f_diamond
+   488                                 
+   489 0000043B B8[00000000]            mov eax, trapezium
+   490 00000440 BB[00000000]            mov ebx, function
+   491 00000445 E844FCFFFF              call compare
+   492 0000044A 83F901                  cmp ecx, 1
+   493 0000044D 0F842F020000            je f_trapezium
+   494                                 
+   495 00000453 B8[00000000]            mov eax, square
+   496 00000458 BB[00000000]            mov ebx, function
+   497 0000045D E82CFCFFFF              call compare
+   498 00000462 83F901                  cmp ecx, 1
+   499 00000465 0F8404010000            je f_square
+   500                                 
+   501 0000046B B8[00000000]            mov eax, circle
+   502 00000470 BB[00000000]            mov ebx, function
+   503 00000475 E814FCFFFF              call compare
+   504 0000047A 83F901                  cmp ecx, 1
+   505 0000047D 0F8487000000            je f_circle
+   506                                 
+   507 00000483 B8[00000000]            mov eax, rectangle
+   508 00000488 BB[00000000]            mov ebx, function
+   509 0000048D E8FCFBFFFF              call compare
+   510 00000492 83F901                  cmp ecx, 1
+   511 00000495 0F8426010000            je f_rectangle
+   512                                 
+   513 0000049B B801000000              mov eax, 1
+   514                                 
+   515 000004A0 C3                      ret
+   516                                 
+   517                                 
+   518                                 
+   519                                 f_triangle :
+   520                                 
+   521 000004A1 E8870B0000              call scanNum
+   522 000004A6 A3[00000000]            mov dword [num1], eax
+   523                                 
+   524 000004AB E87D0B0000              call scanNum
+   525 000004B0 A3[00000000]            mov dword [num2], eax
+   526                                 
+   527 000004B5 E8C2160000              call _result
+   528                                 
+   529 000004BA A1[00000000]            mov eax, [num1]
+   530 000004BF 8B1D[00000000]          mov ebx, [num2]
+   531 000004C5 F7E3                    mul ebx
+   532                                 
+   533 000004C7 BB64000000              mov ebx, 100
+   534 000004CC F7E3                    mul ebx
+   535                                 
+   536 000004CE BA00000000              mov edx, 0
+   537 000004D3 B902000000              mov ecx, 2
+   538 000004D8 F7F9                    idiv ecx
+   539                                 
+   540 000004DA A3[00000000]            mov dword[result1], eax
+   541 000004DF BB01000000              mov ebx, 1
+   542 000004E4 E8C7FBFFFF              call printFloat
+   543                                 
+   544 000004E9 E8870C0000              call ask_for_log
+   545                                 
+   546 000004EE B8[00000000]            mov eax, yes
+   547 000004F3 BB[00000000]            mov ebx, question
+   548                                 
+   549 000004F8 E891FBFFFF              call compare
+   550 000004FD 83F901                  cmp ecx, 1
+   551 00000500 0F8597070000            jne _ret
+   552                                 
+   553 00000506 E8F9100000              call _log_2inputFloat
+   554                                 
+   555 0000050B E98E070000              jmp _ret
+   556                                 
+   557                                 f_circle :
+   558                                 
+   559 00000510 E8180B0000              call scanNum
+   560 00000515 A3[00000000]            mov dword [num1], eax
+   561                                 
+   562 0000051A E85D160000              call _result
+   563                                 
+   564 0000051F A1[00000000]            mov eax, [num1]
+   565 00000524 8B1D[00000000]          mov ebx, [num1]
+   566 0000052A F7E3                    mul ebx
+   567                                 
+   568 0000052C BB98080000              mov ebx, 2200
+   569 00000531 F7E3                    mul ebx
+   570                                 
+   571 00000533 BA00000000              mov edx, 0
+   572 00000538 B907000000              mov ecx, 7
+   573 0000053D F7F9                    idiv ecx
+   574                                 
+   575 0000053F A3[00000000]            mov dword[result1], eax
+   576 00000544 BB01000000              mov ebx, 1
+   577 00000549 E862FBFFFF              call printFloat
+   578                                 
+   579 0000054E E8220C0000              call ask_for_log
+   580                                 
+   581 00000553 B8[00000000]            mov eax, yes
+   582 00000558 BB[00000000]            mov ebx, question
+   583                                 
+   584 0000055D E82CFBFFFF              call compare
+   585 00000562 83F901                  cmp ecx, 1
+   586 00000565 0F8532070000            jne _ret
+   587                                 
+   588 0000056B E84D100000              call _log_1inputFloat
+   589                                 
+   590 00000570 E929070000              jmp _ret
+   591                                 
+   592                                 f_square :
+   593                                 
+   594 00000575 E8B30A0000              call scanNum
+   595 0000057A A3[00000000]            mov dword [num1], eax
+   596                                 
+   597 0000057F E8F8150000              call _result
+   598                                 
+   599 00000584 A1[00000000]            mov eax, [num1]
+   600 00000589 8B1D[00000000]          mov ebx, [num1]
+   601 0000058F F7E3                    mul ebx
+   602                                 
+   603 00000591 A3[00000000]            mov dword[result1], eax
+   604 00000596 BB01000000              mov ebx, 1
+   605 0000059B E8FE0A0000              call printNum
+   606                                 
+   607 000005A0 E8D00B0000              call ask_for_log
+   608                                 
+   609 000005A5 B8[00000000]            mov eax, yes
+   610 000005AA BB[00000000]            mov ebx, question
+   611                                 
+   612 000005AF E8DAFAFFFF              call compare
+   613 000005B4 83F901                  cmp ecx, 1
+   614 000005B7 0F85E0060000            jne _ret
+   615                                 
+   616 000005BD E8DB0E0000              call _log_1inputInt
+   617                                 
+   618 000005C2 E9D7060000              jmp _ret
+   619                                 
+   620                                 f_rectangle :
+   621                                 
+   622 000005C7 E8610A0000              call scanNum
+   623 000005CC A3[00000000]            mov dword [num1], eax
+   624                                 
+   625 000005D1 E8570A0000              call scanNum
+   626 000005D6 A3[00000000]            mov dword [num2], eax
+   627                                 
+   628 000005DB E89C150000              call _result
+   629                                 
+   630 000005E0 A1[00000000]            mov eax, [num1]
+   631 000005E5 8B1D[00000000]          mov ebx, [num2]
+   632 000005EB F7E3                    mul ebx
+   633                                 
+   634 000005ED A3[00000000]            mov dword[result1], eax
+   635 000005F2 BB01000000              mov ebx, 1
+   636 000005F7 E8A20A0000              call printNum
+   637                                 
+   638 000005FC E8740B0000              call ask_for_log
+   639                                 
+   640 00000601 B8[00000000]            mov eax, yes
+   641 00000606 BB[00000000]            mov ebx, question
+   642                                 
+   643 0000060B E87EFAFFFF              call compare
+   644 00000610 83F901                  cmp ecx, 1
+   645 00000613 0F8584060000            jne _ret
+   646                                 
+   647 00000619 E8C60E0000              call _log_2inputInt
+   648                                 
+   649 0000061E E97B060000              jmp _ret
+   650                                 
+   651                                 f_diamond :
+   652                                 
+   653 00000623 E8050A0000              call scanNum
+   654 00000628 A3[00000000]            mov dword [num1], eax
+   655                                 
+   656 0000062D E84A150000              call _result
+   657                                 
+   658 00000632 A1[00000000]            mov eax, [num1]
+   659 00000637 8B1D[00000000]          mov ebx, [num1]
+   660 0000063D F7E3                    mul ebx
+   661                                 
+   662 0000063F BB64000000              mov ebx, 100
+   663 00000644 F7E3                    mul ebx
+   664                                 
+   665 00000646 BA00000000              mov edx, 0
+   666 0000064B B902000000              mov ecx, 2
+   667 00000650 F7F9                    idiv ecx
+   668                                 
+   669 00000652 A3[00000000]            mov dword[result1], eax
+   670 00000657 BB01000000              mov ebx, 1
+   671 0000065C E84FFAFFFF              call printFloat
+   672                                 
+   673 00000661 E80F0B0000              call ask_for_log
+   674                                 
+   675 00000666 B8[00000000]            mov eax, yes
+   676 0000066B BB[00000000]            mov ebx, question
+   677                                 
+   678 00000670 E819FAFFFF              call compare
+   679 00000675 83F901                  cmp ecx, 1
+   680 00000678 0F851F060000            jne _ret
+   681                                 
+   682 0000067E E83A0F0000              call _log_1inputFloat
+   683                                 
+   684 00000683 E916060000              jmp _ret
+   685                                 
+   686                                 f_trapezium :
+   687                                 
+   688 00000688 E8A0090000              call scanNum
+   689 0000068D A3[00000000]            mov dword [num1], eax
+   690                                 
+   691 00000692 E896090000              call scanNum
+   692 00000697 A3[00000000]            mov dword [num2], eax
+   693                                 
+   694 0000069C E88C090000              call scanNum
+   695 000006A1 A3[00000000]            mov dword [num3], eax
+   696                                 
+   697 000006A6 E8D1140000              call _result
+   698                                 
+   699 000006AB A1[00000000]            mov eax, [num1]
+   700 000006B0 0305[00000000]          add eax, [num2]
+   701                                 
+   702 000006B6 8B1D[00000000]          mov ebx, [num3]
+   703 000006BC F7E3                    mul ebx
+   704                                 
+   705 000006BE BB64000000              mov ebx, 100
+   706 000006C3 F7E3                    mul ebx
+   707                                 
+   708 000006C5 BA00000000              mov edx, 0
+   709 000006CA B902000000              mov ecx, 2
+   710 000006CF F7F9                    idiv ecx
+   711                                 
+   712 000006D1 A3[00000000]            mov dword[result1], eax
+   713 000006D6 BB01000000              mov ebx, 1
+   714 000006DB E8D0F9FFFF              call printFloat
+   715                                 
+   716 000006E0 E8900A0000              call ask_for_log
+   717                                 
+   718 000006E5 B8[00000000]            mov eax, yes
+   719 000006EA BB[00000000]            mov ebx, question
+   720                                 
+   721 000006EF E89AF9FFFF              call compare
+   722 000006F4 83F901                  cmp ecx, 1
+   723 000006F7 0F85A0050000            jne _ret
+   724                                 
+   725 000006FD E8620F0000              call _log_3inputFloat
+   726                                 
+   727 00000702 E997050000              jmp _ret
+   728                                 
+   729                                 f_volume :
+   730                                 
+   731 00000707 B8[00000000]            mov eax, cube
+   732 0000070C BB[00000000]            mov ebx, function
+   733 00000711 E878F9FFFF              call compare
+   734 00000716 83F901                  cmp ecx, 1
+   735 00000719 0F84D8000000            je f_cube
+   736                                 
+   737 0000071F B8[00000000]            mov eax, cuboid
+   738 00000724 BB[00000000]            mov ebx, function
+   739 00000729 E860F9FFFF              call compare
+   740 0000072E 83F901                  cmp ecx, 1
+   741 00000731 0F841A010000            je f_cuboid
+   742                                 
+   743 00000737 B8[00000000]            mov eax, cone
+   744 0000073C BB[00000000]            mov ebx, function
+   745 00000741 E848F9FFFF              call compare
+   746 00000746 83F901                  cmp ecx, 1
+   747 00000749 0F8481010000            je f_cone
+   748                                 
+   749 0000074F B8[00000000]            mov eax, sphere
+   750 00000754 BB[00000000]            mov ebx, function
+   751 00000759 E830F9FFFF              call compare
+   752 0000075E 83F901                  cmp ecx, 1
+   753 00000761 0F84E0010000            je f_sphere
+   754                                 
+   755 00000767 B8[00000000]            mov eax, cylinder
+   756 0000076C BB[00000000]            mov ebx, function
+   757 00000771 E818F9FFFF              call compare
+   758 00000776 83F901                  cmp ecx, 1
+   759 00000779 0F8435020000            je f_cylinder
+   760                                 
+   761 0000077F B8[00000000]            mov eax, spyramid
+   762 00000784 BB[00000000]            mov ebx, function
+   763 00000789 E800F9FFFF              call compare
+   764 0000078E 83F901                  cmp ecx, 1
+   765 00000791 0F8494020000            je f_spyramid
+   766                                 
+   767 00000797 B8[00000000]            mov eax, tpyramid
+   768 0000079C BB[00000000]            mov ebx, function
+   769 000007A1 E8E8F8FFFF              call compare
+   770 000007A6 83F901                  cmp ecx, 1
+   771 000007A9 0F84F3020000            je f_tpyramid
+   772                                 
+   773 000007AF B8[00000000]            mov eax, rpyramid
+   774 000007B4 BB[00000000]            mov ebx, function
+   775 000007B9 E8D0F8FFFF              call compare
+   776 000007BE 83F901                  cmp ecx, 1
+   777 000007C1 0F8468030000            je f_rpyramid
+   778                                 
+   779 000007C7 B8[00000000]            mov eax, tprism
+   780 000007CC BB[00000000]            mov ebx, function
+   781 000007D1 E8B8F8FFFF              call compare
+   782 000007D6 83F901                  cmp ecx, 1
+   783 000007D9 0F84DD030000            je f_tprism
+   784                                 
+   785 000007DF B8[00000000]            mov eax, rprism
+   786 000007E4 BB[00000000]            mov ebx, function
+   787 000007E9 E8A0F8FFFF              call compare
+   788 000007EE 83F901                  cmp ecx, 1
+   789 000007F1 0F843F040000            je f_rprism
+   790                                 
+   791 000007F7 B801000000              mov eax, 1
+   792 000007FC C3                      ret
+   793                                 
+   794                                 
+   795                                 
+   796                                 f_cube :
+   797                                 
+   798 000007FD E82B080000              call scanNum
+   799 00000802 A3[00000000]            mov dword [num1], eax
+   800                                 
+   801 00000807 E870130000              call _result
+   802                                 
+   803 0000080C A1[00000000]            mov eax, [num1]
+   804 00000811 8B1D[00000000]          mov ebx, [num1]
+   805 00000817 F7E3                    mul ebx
+   806                                 
+   807 00000819 8B1D[00000000]          mov ebx, [num1]
+   808 0000081F F7E3                    mul ebx
+   809                                 
+   810 00000821 A3[00000000]            mov dword[result1], eax
+   811 00000826 BB01000000              mov ebx, 1
+   812 0000082B E86E080000              call printNum
+   813                                 
+   814 00000830 E840090000              call ask_for_log
+   815                                 
+   816 00000835 B8[00000000]            mov eax, yes
+   817 0000083A BB[00000000]            mov ebx, question
+   818                                 
+   819 0000083F E84AF8FFFF              call compare
+   820 00000844 83F901                  cmp ecx, 1
+   821 00000847 0F8550040000            jne _ret
+   822                                 
+   823 0000084D E84B0C0000              call _log_1inputInt
+   824                                 
+   825 00000852 E947040000              jmp _ret
+   826                                 
+   827                                 f_cuboid :
+   828                                 
+   829 00000857 E8D1070000              call scanNum
+   830 0000085C A3[00000000]            mov dword [num1], eax
+   831                                 
+   832 00000861 E8C7070000              call scanNum
+   833 00000866 A3[00000000]            mov dword [num2], eax
+   834                                 
+   835 0000086B E8BD070000              call scanNum
+   836 00000870 A3[00000000]            mov dword [num3], eax
+   837                                 
+   838 00000875 B804000000              mov eax, 4
+   839 0000087A BB01000000              mov ebx, 1
+   840 0000087F B9[00000000]            mov ecx, result
+   841 00000884 BA09000000              mov edx, lresult
+   842 00000889 CD80                    int 80
+   843                                 
+   844 0000088B A1[00000000]            mov eax, [num1]
+   845 00000890 8B1D[00000000]          mov ebx, [num2]
+   846 00000896 F7E3                    mul ebx
+   847                                 
+   848 00000898 8B1D[00000000]          mov ebx, [num3]
+   849 0000089E F7E3                    mul ebx
+   850                                 
+   851 000008A0 A3[00000000]            mov dword[result1], eax
+   852 000008A5 BB01000000              mov ebx, 1
+   853 000008AA E8EF070000              call printNum
+   854                                 
+   855 000008AF E8C1080000              call ask_for_log
+   856                                 
+   857 000008B4 B8[00000000]            mov eax, yes
+   858 000008B9 BB[00000000]            mov ebx, question
+   859                                 
+   860 000008BE E8CBF7FFFF              call compare
+   861 000008C3 83F901                  cmp ecx, 1
+   862 000008C6 0F85D1030000            jne _ret
+   863                                 
+   864 000008CC E8730C0000              call _log_3inputInt
+   865                                 
+   866 000008D1 E9C8030000              jmp _ret
+   867                                 
+   868                                 f_cone :
+   869                                 
+   870 000008D6 E852070000              call scanNum
+   871 000008DB A3[00000000]            mov dword [num1], eax
+   872                                 
+   873 000008E0 E848070000              call scanNum
+   874 000008E5 A3[00000000]            mov dword [num2], eax
+   875                                 
+   876 000008EA E88D120000              call _result
+   877                                 
+   878 000008EF A1[00000000]            mov eax, [num1]
+   879 000008F4 8B1D[00000000]          mov ebx, [num1]
+   880 000008FA F7E3                    mul ebx
+   881                                 
+   882 000008FC 8B1D[00000000]          mov ebx, [num2]
+   883 00000902 F7E3                    mul ebx
+   884                                 
+   885 00000904 BB98080000              mov ebx, 2200
+   886 00000909 F7E3                    mul ebx
+   887                                 
+   888 0000090B BA00000000              mov edx, 0
+   889 00000910 B915000000              mov ecx, 21
+   890 00000915 F7F9                    idiv ecx
+   891                                 
+   892 00000917 A3[00000000]            mov dword[result1], eax
+   893 0000091C BB01000000              mov ebx, 1
+   894 00000921 E88AF7FFFF              call printFloat
+   895                                 
+   896 00000926 E84A080000              call ask_for_log
+   897                                 
+   898 0000092B B8[00000000]            mov eax, yes
+   899 00000930 BB[00000000]            mov ebx, question
+   900                                 
+   901 00000935 E854F7FFFF              call compare
+   902 0000093A 83F901                  cmp ecx, 1
+   903 0000093D 0F855A030000            jne _ret
+   904                                 
+   905 00000943 E8BC0C0000              call _log_2inputFloat
+   906                                 
+   907 00000948 E951030000              jmp _ret
+   908                                 
+   909                                 f_sphere :
+   910                                 
+   911 0000094D E8DB060000              call scanNum
+   912 00000952 A3[00000000]            mov dword [num1], eax
+   913                                 
+   914 00000957 E820120000              call _result
+   915                                 
+   916 0000095C A1[00000000]            mov eax, [num1]
+   917 00000961 8B1D[00000000]          mov ebx, [num1]
+   918 00000967 F7E3                    mul ebx
+   919                                 
+   920 00000969 8B1D[00000000]          mov ebx, [num1]
+   921 0000096F F7E3                    mul ebx
+   922                                 
+   923 00000971 BB90010000              mov ebx, 400
+   924 00000976 F7E3                    mul ebx
+   925                                 
+   926 00000978 BA00000000              mov edx, 0
+   927 0000097D B903000000              mov ecx, 3
+   928 00000982 F7F9                    idiv ecx
+   929                                 
+   930 00000984 A3[00000000]            mov dword[result1], eax
+   931 00000989 BB01000000              mov ebx, 1
+   932 0000098E E81DF7FFFF              call printFloat
+   933                                 
+   934 00000993 E8DD070000              call ask_for_log
+   935                                 
+   936 00000998 B8[00000000]            mov eax, yes
+   937 0000099D BB[00000000]            mov ebx, question
+   938                                 
+   939 000009A2 E8E7F6FFFF              call compare
+   940 000009A7 83F901                  cmp ecx, 1
+   941 000009AA 0F85ED020000            jne _ret
+   942                                 
+   943 000009B0 E8080C0000              call _log_1inputFloat
+   944                                 
+   945 000009B5 E9E4020000              jmp _ret
+   946                                 
+   947                                 f_cylinder :
+   948                                 
+   949 000009BA E86E060000              call scanNum
+   950 000009BF A3[00000000]            mov dword [num1], eax
+   951                                 
+   952 000009C4 E864060000              call scanNum
+   953 000009C9 A3[00000000]            mov dword [num2], eax
+   954                                 
+   955 000009CE E8A9110000              call _result
+   956                                 
+   957 000009D3 A1[00000000]            mov eax, [num1]
+   958 000009D8 8B1D[00000000]          mov ebx, [num1]
+   959 000009DE F7E3                    mul ebx
+   960                                 
+   961 000009E0 8B1D[00000000]          mov ebx, [num2]
+   962 000009E6 F7E3                    mul ebx
+   963                                 
+   964 000009E8 BB98080000              mov ebx, 2200
+   965 000009ED F7E3                    mul ebx
+   966                                 
+   967 000009EF BA00000000              mov edx, 0
+   968 000009F4 B907000000              mov ecx, 7
+   969 000009F9 F7F9                    idiv ecx
+   970                                 
+   971 000009FB A3[00000000]            mov dword[result1], eax
+   972 00000A00 BB01000000              mov ebx, 1
+   973 00000A05 E8A6F6FFFF              call printFloat
+   974                                 
+   975 00000A0A E866070000              call ask_for_log
+   976                                 
+   977 00000A0F B8[00000000]            mov eax, yes
+   978 00000A14 BB[00000000]            mov ebx, question
+   979                                 
+   980 00000A19 E870F6FFFF              call compare
+   981 00000A1E 83F901                  cmp ecx, 1
+   982 00000A21 0F8576020000            jne _ret
+   983                                 
+   984 00000A27 E8D80B0000              call _log_2inputFloat
+   985                                 
+   986 00000A2C E96D020000              jmp _ret
+   987                                 
+   988                                 f_spyramid :
+   989                                 
+   990 00000A31 E8F7050000              call scanNum
+   991 00000A36 A3[00000000]            mov dword [num1], eax
+   992                                 
+   993 00000A3B E8ED050000              call scanNum
+   994 00000A40 A3[00000000]            mov dword [num2], eax
+   995                                 
+   996 00000A45 E832110000              call _result
+   997                                 
+   998 00000A4A A1[00000000]            mov eax, [num1]
+   999 00000A4F 8B1D[00000000]          mov ebx, [num1]
+  1000 00000A55 F7E3                    mul ebx
+  1001                                 
+  1002 00000A57 8B1D[00000000]          mov ebx, [num2]
+  1003 00000A5D F7E3                    mul ebx
+  1004                                 
+  1005 00000A5F BB64000000              mov ebx, 100
+  1006 00000A64 F7E3                    mul ebx
+  1007                                 
+  1008 00000A66 BA00000000              mov edx, 0
+  1009 00000A6B B903000000              mov ecx, 3
+  1010 00000A70 F7F9                    idiv ecx
+  1011                                 
+  1012 00000A72 A3[00000000]            mov dword[result1], eax
+  1013 00000A77 BB01000000              mov ebx, 1
+  1014 00000A7C E82FF6FFFF              call printFloat
+  1015                                 
+  1016 00000A81 E8EF060000              call ask_for_log
+  1017                                 
+  1018 00000A86 B8[00000000]            mov eax, yes
+  1019 00000A8B BB[00000000]            mov ebx, question
+  1020                                 
+  1021 00000A90 E8F9F5FFFF              call compare
+  1022 00000A95 83F901                  cmp ecx, 1
+  1023 00000A98 0F85FF010000            jne _ret
+  1024                                 
+  1025 00000A9E E8610B0000              call _log_2inputFloat
+  1026                                 
+  1027 00000AA3 E9F6010000              jmp _ret
+  1028                                 
+  1029                                 f_tpyramid :
+  1030                                 
+  1031 00000AA8 E880050000              call scanNum
+  1032 00000AAD A3[00000000]            mov dword [num1], eax
+  1033                                 
+  1034 00000AB2 E876050000              call scanNum
+  1035 00000AB7 A3[00000000]            mov dword [num2], eax
+  1036                                 
+  1037 00000ABC E86C050000              call scanNum
+  1038 00000AC1 A3[00000000]            mov dword [num3], eax
+  1039                                 
+  1040 00000AC6 E8B1100000              call _result
+  1041                                 
+  1042 00000ACB A1[00000000]            mov eax, [num1]
+  1043 00000AD0 8B1D[00000000]          mov ebx, [num2]
+  1044 00000AD6 F7E3                    mul ebx
+  1045                                 
+  1046 00000AD8 BB64000000              mov ebx, 100
+  1047 00000ADD F7E3                    mul ebx
+  1048                                 
+  1049 00000ADF BA00000000              mov edx, 0
+  1050 00000AE4 B902000000              mov ecx, 2
+  1051 00000AE9 F7F9                    idiv ecx
+  1052                                 
+  1053 00000AEB 8B1D[00000000]          mov ebx, [num3]
+  1054 00000AF1 F7E3                    mul ebx
+  1055                                 
+  1056 00000AF3 BA00000000              mov edx, 0
+  1057 00000AF8 B903000000              mov ecx, 3
+  1058 00000AFD F7F9                    idiv ecx
+  1059                                 
+  1060 00000AFF A3[00000000]            mov dword[result1], eax
+  1061 00000B04 BB01000000              mov ebx, 1
+  1062 00000B09 E8A2F5FFFF              call printFloat
+  1063                                 
+  1064 00000B0E E862060000              call ask_for_log
+  1065                                 
+  1066 00000B13 B8[00000000]            mov eax, yes
+  1067 00000B18 BB[00000000]            mov ebx, question
+  1068                                 
+  1069 00000B1D E86CF5FFFF              call compare
+  1070 00000B22 83F901                  cmp ecx, 1
+  1071 00000B25 0F8572010000            jne _ret
+  1072                                 
+  1073 00000B2B E8340B0000              call _log_3inputFloat
+  1074                                 
+  1075 00000B30 E969010000              jmp _ret
+  1076                                 
+  1077                                 f_rpyramid :
+  1078                                 
+  1079 00000B35 E8F3040000              call scanNum
+  1080 00000B3A A3[00000000]            mov dword [num1], eax
+  1081                                 
+  1082 00000B3F E8E9040000              call scanNum
+  1083 00000B44 A3[00000000]            mov dword [num2], eax
+  1084                                 
+  1085 00000B49 E8DF040000              call scanNum
+  1086 00000B4E A3[00000000]            mov dword [num3], eax
+  1087                                 
+  1088 00000B53 E824100000              call _result
+  1089                                 
+  1090 00000B58 A1[00000000]            mov eax, [num1]
+  1091 00000B5D 8B1D[00000000]          mov ebx, [num2]
+  1092 00000B63 F7E3                    mul ebx
+  1093                                 
+  1094 00000B65 BB64000000              mov ebx, 100
+  1095 00000B6A F7E3                    mul ebx
+  1096                                 
+  1097 00000B6C BA00000000              mov edx, 0
+  1098 00000B71 B902000000              mov ecx, 2
+  1099 00000B76 F7F9                    idiv ecx
+  1100                                 
+  1101 00000B78 8B1D[00000000]          mov ebx, [num3]
+  1102 00000B7E F7E3                    mul ebx
+  1103                                 
+  1104 00000B80 BA00000000              mov edx, 0
+  1105 00000B85 B903000000              mov ecx, 3
+  1106 00000B8A F7F9                    idiv ecx
+  1107                                 
+  1108 00000B8C A3[00000000]            mov dword[result1], eax
+  1109 00000B91 BB01000000              mov ebx, 1
+  1110 00000B96 E815F5FFFF              call printFloat
+  1111                                 
+  1112 00000B9B E8D5050000              call ask_for_log
+  1113                                 
+  1114 00000BA0 B8[00000000]            mov eax, yes
+  1115 00000BA5 BB[00000000]            mov ebx, question
+  1116                                 
+  1117 00000BAA E8DFF4FFFF              call compare
+  1118 00000BAF 83F901                  cmp ecx, 1
+  1119 00000BB2 0F85E5000000            jne _ret
+  1120                                 
+  1121 00000BB8 E8A70A0000              call _log_3inputFloat
+  1122                                 
+  1123 00000BBD E9DC000000              jmp _ret
+  1124                                 
+  1125                                 f_tprism :
+  1126                                 
+  1127 00000BC2 E866040000              call scanNum
+  1128 00000BC7 A3[00000000]            mov dword [num1], eax
+  1129                                 
+  1130 00000BCC E85C040000              call scanNum
+  1131 00000BD1 A3[00000000]            mov dword [num2], eax
+  1132                                 
+  1133 00000BD6 E852040000              call scanNum
+  1134 00000BDB A3[00000000]            mov dword [num3], eax
+  1135                                 
+  1136 00000BE0 E8970F0000              call _result
+  1137                                 
+  1138 00000BE5 A1[00000000]            mov eax, [num1]
+  1139 00000BEA 8B1D[00000000]          mov ebx, [num2]
+  1140 00000BF0 F7E3                    mul ebx
+  1141                                 
+  1142 00000BF2 BB64000000              mov ebx, 100
+  1143 00000BF7 F7E3                    mul ebx
+  1144                                 
+  1145 00000BF9 BA00000000              mov edx, 0
+  1146 00000BFE B902000000              mov ecx, 2
+  1147 00000C03 F7F9                    idiv ecx
+  1148                                 
+  1149 00000C05 8B1D[00000000]          mov ebx, [num3]
+  1150 00000C0B F7E3                    mul ebx
+  1151                                 
+  1152 00000C0D A3[00000000]            mov dword[result1], eax
+  1153 00000C12 BB01000000              mov ebx, 1
+  1154 00000C17 E894F4FFFF              call printFloat
+  1155                                 
+  1156 00000C1C E854050000              call ask_for_log
+  1157                                 
+  1158 00000C21 B8[00000000]            mov eax, yes
+  1159 00000C26 BB[00000000]            mov ebx, question
+  1160                                 
+  1161 00000C2B E85EF4FFFF              call compare
+  1162 00000C30 83F901                  cmp ecx, 1
+  1163 00000C33 756C                    jne _ret
+  1164                                 
+  1165 00000C35 E82A0A0000              call _log_3inputFloat
+  1166                                 
+  1167 00000C3A EB65                    jmp _ret
+  1168                                 
+  1169                                 f_rprism :
+  1170                                 
+  1171 00000C3C E8EC030000              call scanNum
+  1172 00000C41 A3[00000000]            mov dword [num1], eax
+  1173                                 
+  1174 00000C46 E8E2030000              call scanNum
+  1175 00000C4B A3[00000000]            mov dword [num2], eax
+  1176                                 
+  1177 00000C50 E8D8030000              call scanNum
+  1178 00000C55 A3[00000000]            mov dword [num3], eax
+  1179                                 
+  1180 00000C5A E81D0F0000              call _result
+  1181                                 
+  1182 00000C5F A1[00000000]            mov eax, [num1]
+  1183 00000C64 8B1D[00000000]          mov ebx, [num2]
+  1184 00000C6A F7E3                    mul ebx
+  1185                                 
+  1186 00000C6C 8B1D[00000000]          mov ebx, [num3]
+  1187 00000C72 F7E3                    mul ebx
+  1188                                 
+  1189 00000C74 A3[00000000]            mov dword[result1], eax
+  1190 00000C79 BB01000000              mov ebx, 1
+  1191 00000C7E E81B040000              call printNum
+  1192                                 
+  1193 00000C83 E8ED040000              call ask_for_log
+  1194                                 
+  1195 00000C88 B8[00000000]            mov eax, yes
+  1196 00000C8D BB[00000000]            mov ebx, question
+  1197                                 
+  1198 00000C92 E8F7F3FFFF              call compare
+  1199 00000C97 83F901                  cmp ecx, 1
+  1200 00000C9A 7505                    jne _ret
+  1201                                 
+  1202 00000C9C E8A3080000              call _log_3inputInt
+  1203                                 
+  1204 00000CA1 EBFE                    jmp _ret
+  1205                                 
+  1206                                 _ret
+  1207                                 
+  1208 00000CA3 B800000000              mov eax, 0
+  1209 00000CA8 C3                      ret
+  1210                                 
+  1211                                 %line 9+1 main.asm
+  1212                                 
+  1213                                 
+  1214                                 %line 3+1 temperature.asm
+  1215                                 
+  1216                                 [section .data]
+  1217                                 
+  1218                                 [section .bss]
+  1219                                 
+  1220                                 [section .text]
+  1221                                 
+  1222                                 f_temp :
+  1223                                 
+  1224                                 
+  1225                                 
+  1226 00000CA9 B8[00000000]            mov eax, tempc
+  1227 00000CAE BB[00000000]            mov ebx, function
+  1228 00000CB3 E8D6F3FFFF              call compare
+  1229 00000CB8 83F901                  cmp ecx, 1
+  1230 00000CBB 744C                    je f_tempc
+  1231                                 
+  1232                                 
+  1233                                 
+  1234 00000CBD B8[00000000]            mov eax, tempr
+  1235 00000CC2 BB[00000000]            mov ebx, function
+  1236 00000CC7 E8C2F3FFFF              call compare
+  1237 00000CCC 83F901                  cmp ecx, 1
+  1238 00000CCF 0F84E8000000            je f_tempr
+  1239                                 
+  1240                                 
+  1241                                 
+  1242 00000CD5 B8[00000000]            mov eax, tempk
+  1243 00000CDA BB[00000000]            mov ebx, function
+  1244 00000CDF E8AAF3FFFF              call compare
+  1245 00000CE4 83F901                  cmp ecx, 1
+  1246 00000CE7 0F8494010000            je f_tempk
+  1247                                 
+  1248                                 
+  1249                                 
+  1250 00000CED B8[00000000]            mov eax, tempf
+  1251 00000CF2 BB[00000000]            mov ebx, function
+  1252 00000CF7 E892F3FFFF              call compare
+  1253 00000CFC 83F901                  cmp ecx, 1
+  1254 00000CFF 0F8442020000            je f_tempf
+  1255                                 
+  1256 00000D05 B801000000              mov eax, 1
+  1257                                 
+  1258 00000D0A C3                      ret
+  1259                                 
+  1260                                 
+  1261                                 
+  1262                                 
+  1263                                 f_tempc :
+  1264                                 
+  1265 00000D0B E81D030000              call scanNum
+  1266 00000D10 A3[00000000]            mov dword [num1], eax
+  1267                                 
+  1268 00000D15 E8620E0000              call _result
+  1269                                 
+  1270                                 
+  1271                                 
+  1272 00000D1A A1[00000000]            mov eax, [num1]
+  1273 00000D1F BB90010000              mov ebx, 400
+  1274 00000D24 F7E3                    mul ebx
+  1275                                 
+  1276 00000D26 BA00000000              mov edx, 0
+  1277 00000D2B B905000000              mov ecx, 5
+  1278 00000D30 F7F9                    idiv ecx
+  1279                                 
+  1280 00000D32 A3[00000000]            mov dword[result1], eax
+  1281 00000D37 BB01000000              mov ebx, 1
+  1282 00000D3C E86FF3FFFF              call printFloat
+  1283                                 
+  1284 00000D41 E8920E0000              call reamur
+  1285                                 
+  1286                                 
+  1287                                 
+  1288 00000D46 A1[00000000]            mov eax, [num1]
+  1289 00000D4B 0511010000              add eax, 273
+  1290                                 
+  1291 00000D50 BB64000000              mov ebx, 100
+  1292 00000D55 F7E3                    mul ebx
+  1293                                 
+  1294 00000D57 A3[00000000]            mov dword[result2], eax
+  1295 00000D5C BB01000000              mov ebx, 1
+  1296 00000D61 E84AF3FFFF              call printFloat
+  1297                                 
+  1298 00000D66 E8280E0000              call kelvin
+  1299                                 
+  1300                                 
+  1301                                 
+  1302 00000D6B A1[00000000]            mov eax, [num1]
+  1303 00000D70 BB84030000              mov ebx, 900
+  1304 00000D75 F7E3                    mul ebx
+  1305                                 
+  1306 00000D77 BA00000000              mov edx, 0
+  1307 00000D7C B905000000              mov ecx, 5
+  1308 00000D81 F7F9                    idiv ecx
+  1309                                 
+  1310 00000D83 05800C0000              add eax, 3200
+  1311                                 
+  1312 00000D88 A3[00000000]            mov dword[result3], eax
+  1313 00000D8D BB01000000              mov ebx, 1
+  1314 00000D92 E819F3FFFF              call printFloat
+  1315                                 
+  1316 00000D97 E8250E0000              call fahrenheit
+  1317                                 
+  1318 00000D9C E8D4030000              call ask_for_log
+  1319                                 
+  1320 00000DA1 B8[00000000]            mov eax, yes
+  1321 00000DA6 BB[00000000]            mov ebx, question
+  1322                                 
+  1323 00000DAB E8DEF2FFFF              call compare
+  1324 00000DB0 83F901                  cmp ecx, 1
+  1325 00000DB3 0F85E4FEFFFF            jne _ret
+  1326                                 
+  1327 00000DB9 E8E2030000              call _log_tempc
+  1328                                 
+  1329 00000DBE E9DBFEFFFF              jmp _ret
+  1330                                 
+  1331                                 
+  1332                                 
+  1333                                 f_tempr :
+  1334                                 
+  1335 00000DC3 E865020000              call scanNum
+  1336 00000DC8 A3[00000000]            mov dword [num1], eax
+  1337                                 
+  1338 00000DCD E8AA0D0000              call _result
+  1339                                 
+  1340                                 
+  1341                                 
+  1342 00000DD2 A1[00000000]            mov eax, [num1]
+  1343 00000DD7 BBF4010000              mov ebx, 500
+  1344 00000DDC F7E3                    mul ebx
+  1345                                 
+  1346 00000DDE BA00000000              mov edx, 0
+  1347 00000DE3 B904000000              mov ecx, 4
+  1348 00000DE8 F7F9                    idiv ecx
+  1349                                 
+  1350 00000DEA A3[00000000]            mov dword[result1], eax
+  1351 00000DEF BB01000000              mov ebx, 1
+  1352 00000DF4 E8B7F2FFFF              call printFloat
+  1353                                 
+  1354 00000DF9 E8AC0D0000              call celcius
+  1355                                 
+  1356                                 
+  1357                                 
+  1358 00000DFE A1[00000000]            mov eax, [num1]
+  1359 00000E03 BBF4010000              mov ebx, 500
+  1360 00000E08 F7E3                    mul ebx
+  1361                                 
+  1362 00000E0A BA00000000              mov edx, 0
+  1363 00000E0F B904000000              mov ecx, 4
+  1364 00000E14 F7F9                    idiv ecx
+  1365                                 
+  1366 00000E16 05A46A0000              add eax, 27300
+  1367                                 
+  1368 00000E1B A3[00000000]            mov dword[result2], eax
+  1369 00000E20 BB01000000              mov ebx, 1
+  1370 00000E25 E886F2FFFF              call printFloat
+  1371                                 
+  1372 00000E2A E8640D0000              call kelvin
+  1373                                 
+  1374                                 
+  1375                                 
+  1376 00000E2F A1[00000000]            mov eax, [num1]
+  1377 00000E34 BB84030000              mov ebx, 900
+  1378 00000E39 F7E3                    mul ebx
+  1379                                 
+  1380 00000E3B BA00000000              mov edx, 0
+  1381 00000E40 B904000000              mov ecx, 4
+  1382 00000E45 F7F9                    idiv ecx
+  1383                                 
+  1384 00000E47 05800C0000              add eax, 3200
+  1385                                 
+  1386 00000E4C A3[00000000]            mov dword[result3], eax
+  1387 00000E51 BB01000000              mov ebx, 1
+  1388 00000E56 E855F2FFFF              call printFloat
+  1389                                 
+  1390 00000E5B E8610D0000              call fahrenheit
+  1391                                 
+  1392 00000E60 E810030000              call ask_for_log
+  1393                                 
+  1394 00000E65 B8[00000000]            mov eax, yes
+  1395 00000E6A BB[00000000]            mov ebx, question
+  1396                                 
+  1397 00000E6F E81AF2FFFF              call compare
+  1398 00000E74 83F901                  cmp ecx, 1
+  1399 00000E77 0F8520FEFFFF            jne _ret
+  1400                                 
+  1401 00000E7D E8DC030000              call _log_tempr
+  1402                                 
+  1403 00000E82 E917FEFFFF              jmp _ret
+  1404                                 
+  1405                                 
+  1406                                 
+  1407                                 f_tempk :
+  1408                                 
+  1409 00000E87 E8A1010000              call scanNum
+  1410 00000E8C A3[00000000]            mov dword [num1], eax
+  1411                                 
+  1412 00000E91 E8E60C0000              call _result
+  1413                                 
+  1414                                 
+  1415                                 
+  1416 00000E96 A1[00000000]            mov eax, [num1]
+  1417 00000E9B 2D11010000              sub eax, 273
+  1418                                 
+  1419 00000EA0 BB64000000              mov ebx, 100
+  1420 00000EA5 F7E3                    mul ebx
+  1421                                 
+  1422 00000EA7 A3[00000000]            mov dword[result1], eax
+  1423 00000EAC BB01000000              mov ebx, 1
+  1424 00000EB1 E8FAF1FFFF              call printFloat
+  1425                                 
+  1426 00000EB6 E8EF0C0000              call celcius
+  1427                                 
+  1428                                 
+  1429                                 
+  1430 00000EBB BA00000000              mov edx, 0
+  1431 00000EC0 B890010000              mov eax, 400
+  1432 00000EC5 B905000000              mov ecx, 5
+  1433 00000ECA F7F9                    idiv ecx
+  1434                                 
+  1435 00000ECC 89C3                    mov ebx, eax
+  1436                                 
+  1437 00000ECE A1[00000000]            mov eax, [num1]
+  1438 00000ED3 2D11010000              sub eax, 273
+  1439 00000ED8 F7E3                    mul ebx
+  1440                                 
+  1441 00000EDA A3[00000000]            mov dword[result2], eax
+  1442 00000EDF BB01000000              mov ebx, 1
+  1443 00000EE4 E8C7F1FFFF              call printFloat
+  1444                                 
+  1445 00000EE9 E8EA0C0000              call reamur
+  1446                                 
+  1447                                 
+  1448                                 
+  1449 00000EEE BA00000000              mov edx, 0
+  1450 00000EF3 B884030000              mov eax, 900
+  1451 00000EF8 B905000000              mov ecx, 5
+  1452 00000EFD F7F9                    idiv ecx
+  1453                                 
+  1454 00000EFF 89C3                    mov ebx, eax
+  1455                                 
+  1456 00000F01 A1[00000000]            mov eax, [num1]
+  1457 00000F06 2D11010000              sub eax, 273
+  1458 00000F0B F7E3                    mul ebx
+  1459                                 
+  1460 00000F0D 05800C0000              add eax, 3200
+  1461                                 
+  1462 00000F12 A3[00000000]            mov dword[result3], eax
+  1463 00000F17 BB01000000              mov ebx, 1
+  1464 00000F1C E88FF1FFFF              call printFloat
+  1465                                 
+  1466 00000F21 E89B0C0000              call fahrenheit
+  1467                                 
+  1468 00000F26 E84A020000              call ask_for_log
+  1469                                 
+  1470 00000F2B B8[00000000]            mov eax, yes
+  1471 00000F30 BB[00000000]            mov ebx, question
+  1472                                 
+  1473 00000F35 E854F1FFFF              call compare
+  1474 00000F3A 83F901                  cmp ecx, 1
+  1475 00000F3D 0F855AFDFFFF            jne _ret
+  1476                                 
+  1477 00000F43 E8D4030000              call _log_tempk
+  1478                                 
+  1479 00000F48 E951FDFFFF              jmp _ret
+  1480                                 
+  1481                                 
+  1482                                 
+  1483                                 f_tempf :
+  1484                                 
+  1485 00000F4D E8DB000000              call scanNum
+  1486 00000F52 A3[00000000]            mov dword [num1], eax
+  1487                                 
+  1488 00000F57 E8200C0000              call _result
+  1489                                 
+  1490                                 
+  1491                                 
+  1492 00000F5C B8F4010000              mov eax, 500
+  1493 00000F61 BA00000000              mov edx, 0
+  1494 00000F66 B909000000              mov ecx, 9
+  1495 00000F6B F7F9                    idiv ecx
+  1496                                 
+  1497 00000F6D 89C3                    mov ebx, eax
+  1498                                 
+  1499 00000F6F A1[00000000]            mov eax, [num1]
+  1500 00000F74 83E820                  sub eax, 32
+  1501 00000F77 F7E3                    mul ebx
+  1502                                 
+  1503 00000F79 A3[00000000]            mov dword[result1], eax
+  1504 00000F7E BB01000000              mov ebx, 1
+  1505 00000F83 E828F1FFFF              call printFloat
+  1506                                 
+  1507 00000F88 E81D0C0000              call celcius
+  1508                                 
+  1509                                 
+  1510                                 
+  1511 00000F8D B890010000              mov eax, 400
+  1512 00000F92 BA00000000              mov edx, 0
+  1513 00000F97 B909000000              mov ecx, 9
+  1514 00000F9C F7F9                    idiv ecx
+  1515                                 
+  1516 00000F9E 89C3                    mov ebx, eax
+  1517                                 
+  1518 00000FA0 A1[00000000]            mov eax, [num1]
+  1519 00000FA5 83E820                  sub eax, 32
+  1520 00000FA8 F7E3                    mul ebx
+  1521                                 
+  1522 00000FAA A3[00000000]            mov dword[result2], eax
+  1523 00000FAF BB01000000              mov ebx, 1
+  1524 00000FB4 E8F7F0FFFF              call printFloat
+  1525                                 
+  1526 00000FB9 E81A0C0000              call reamur
+  1527                                 
+  1528                                 
+  1529                                 
+  1530 00000FBE B8F4010000              mov eax, 500
+  1531 00000FC3 BA00000000              mov edx, 0
+  1532 00000FC8 B909000000              mov ecx, 9
+  1533 00000FCD F7F9                    idiv ecx
+  1534                                 
+  1535 00000FCF 89C3                    mov ebx, eax
+  1536                                 
+  1537 00000FD1 A1[00000000]            mov eax, [num1]
+  1538 00000FD6 83E820                  sub eax, 32
+  1539 00000FD9 F7E3                    mul ebx
+  1540                                 
+  1541 00000FDB 05A46A0000              add eax, 27300
+  1542                                 
+  1543 00000FE0 A3[00000000]            mov dword[result3], eax
+  1544 00000FE5 BB01000000              mov ebx, 1
+  1545 00000FEA E8C1F0FFFF              call printFloat
+  1546                                 
+  1547 00000FEF E89F0B0000              call kelvin
+  1548                                 
+  1549 00000FF4 E87C010000              call ask_for_log
+  1550                                 
+  1551 00000FF9 B8[00000000]            mov eax, yes
+  1552 00000FFE BB[00000000]            mov ebx, question
+  1553                                 
+  1554 00001003 E886F0FFFF              call compare
+  1555 00001008 83F901                  cmp ecx, 1
+  1556 0000100B 0F858CFCFFFF            jne _ret
+  1557                                 
+  1558 00001011 E8C4030000              call _log_tempf
+  1559                                 
+  1560 00001016 E983FCFFFF              jmp _ret
+  1561                                 
+  1562                                 %line 12+1 main.asm
+  1563                                 
+  1564                                 
+  1565                                 %line 1+1 scanNum.asm
+  1566                                 
+  1567                                 
+  1568                                 
+  1569                                 
+  1570                                 
+  1571                                 %line 8+1 scanNum.asm
+  1572                                 
+  1573                                 [section .data]
+  1574                                 
+  1575 0000000C 0A000000                _scanNumSepuluh dd 10
+  1576                                 
+  1577                                 [section .bss]
+  1578 00000204 <gap>                   _scanNumStr resb 1
+  1579                                 
+  1580                                 
+  1581 00000205 <gap>                   _scanNumResult resd 1
+  1582                                 
+  1583                                 
+  1584 00000209 <gap>                   _scanNumNegative resd 1
+  1585                                 
+  1586                                 [section .text]
+  1587                                 
+  1588                                 
+  1589                                 _scanNumRead:
+  1590                                 
+  1591                                 
+  1592 0000101B B803000000              mov eax, 3
+  1593 00001020 BB00000000              mov ebx, 0
+  1594 00001025 B9[00000000]            mov ecx, _scanNumStr
+  1595 0000102A BA01000000              mov edx, 1
+  1596 0000102F CD80                    int 0x80
+  1597                                 
+  1598 00001031 C3                      ret
+  1599                                 
+  1600                                 
+  1601                                 scanNum:
+  1602                                 
+  1603                                 
+  1604 00001032 C705[00000000]0000-     mov dword [_scanNumResult], 0
+  1605 00001032 0000               
+  1606 0000103C C705[00000000]0100-     mov dword [_scanNumNegative], 1
+  1607 0000103C 0000               
+  1608                                 
+  1609 00001046 E8CBFFFFFF              call _scanNumRead
+  1610                                 
+  1611                                 
+  1612 0000104B 803D[00000000]2D        cmp byte[_scanNumStr], '-'
+  1613 00001052 750A                    jne _scanNumLoop
+  1614                                 
+  1615                                 
+  1616 00001054 C705[00000000]FFFF-     mov dword [_scanNumNegative], -1
+  1617 00001054 FFFF               
+  1618 0000105E EB2D                    jmp _scanNumNegativeNext
+  1619                                 
+  1620                                 
+  1621                                 _scanNumLoop:
+  1622                                 
+  1623                                 
+  1624 00001060 BB00000000              mov ebx, 0
+  1625 00001065 8A1D[00000000]          mov bl, byte[_scanNumStr]
+  1626                                 
+  1627                                 
+  1628 0000106B 80FB30                  cmp bl, '0'
+  1629 0000106E 7C24                    jl _scanNumExit
+  1630 00001070 80FB39                  cmp bl, '9'
+  1631 00001073 7F1F                    jg _scanNumExit
+  1632                                 
+  1633                                 
+  1634 00001075 80EB30                  sub bl, '0'
+  1635                                 
+  1636                                 
+  1637 00001078 A1[00000000]            mov eax, [_scanNumResult]
+  1638 0000107D BA00000000              mov edx, 0
+  1639 00001082 F725[00000000]          mul dword [_scanNumSepuluh]
+  1640 00001088 01D8                    add eax, ebx
+  1641 0000108A A3[00000000]            mov dword [_scanNumResult], eax
+  1642                                 
+  1643                                 _scanNumNegativeNext:
+  1644                                 
+  1645                                 
+  1646 0000108F E882FFFFFF              call _scanNumRead
+  1647                                 
+  1648 00001094 EBC8                    jmp _scanNumLoop
+  1649                                 
+  1650                                 
+  1651                                 _scanNumExit:
+  1652                                 
+  1653                                 
+  1654 00001096 A1[00000000]            mov eax, [_scanNumResult]
+  1655 0000109B 99                      cdq
+  1656 0000109C F72D[00000000]          imul dword[_scanNumNegative]
+  1657                                 
+  1658 000010A2 C3                      ret
+  1659                                 
+  1660                                 
+  1661                                 %line 15+1 main.asm
+  1662                                 
+  1663                                 
+  1664                                 %line 1+1 printNum.asm
+  1665                                 
+  1666                                 
+  1667                                 
+  1668                                 
+  1669                                 
+  1670                                 %line 8+1 printNum.asm
+  1671                                 
+  1672                                 _printNumStrLen equ 255
+  1673                                 
+  1674                                 [section .data]
+  1675                                 
+  1676 00000010 0A000000                _printNumSepuluh dd 10
+  1677                                 
+  1678                                 
+  1679 00000014 01000000                _printNumNegative dd 1
+  1680                                 
+  1681                                 [section .bss]
+  1682                                 
+  1683 0000020D <gap>                   _printNumStr resb _printNumStrLen
+  1684                                 
+  1685                                 [section .text]
+  1686                                 
+  1687                                 printNum:
+  1688                                 
+  1689 000010A3 B9FF000000              mov ecx, _printNumStrLen
+  1690 000010A8 83E901                  sub ecx, 1
+  1691                                 
+  1692 000010AB C705[00000000]0100-     mov dword [_printNumNegative], 1
+  1693 000010AB 0000               
+  1694                                 
+  1695                                 
+  1696 000010B5 83F800                  cmp eax, 0
+  1697 000010B8 750A                    jne _printNumCekNegative
+  1698                                 
+  1699                                 
+  1700 000010BA C681[00000000]30        mov byte [_printNumStr + ecx], '0'
+  1701 000010C1 83E901                  sub ecx, 1
+  1702 000010C4 EB37                    jmp _printNumCetak
+  1703                                 
+  1704                                 _printNumCekNegative:
+  1705                                 
+  1706                                 
+  1707 000010C6 83F800                  cmp eax, 0
+  1708 000010C9 7F16                    jg _printNumLoop
+  1709                                 
+  1710                                 
+  1711 000010CB C705[00000000]FFFF-     mov dword [_printNumNegative], -1
+  1712 000010CB FFFF               
+  1713 000010D5 BA00000000              mov edx, 0
+  1714 000010DA 89C0                    mov eax, eax
+  1715 000010DC 99                      cdq
+  1716 000010DD F72D[00000000]          imul dword [_printNumNegative]
+  1717                                 
+  1718                                 
+  1719                                 _printNumLoop:
+  1720                                 
+  1721                                 
+  1722 000010E3 BA00000000              mov edx, 0
+  1723 000010E8 F735[00000000]          div dword [_printNumSepuluh]
+  1724                                 
+  1725                                 
+  1726 000010EE 80C230                  add dl, '0'
+  1727 000010F1 8891[00000000]          mov byte [_printNumStr + ecx], dl
+  1728                                 
+  1729 000010F7 83E901                  sub ecx, 1
+  1730                                 
+  1731 000010FA 83F800                  cmp eax, 0
+  1732 000010FD 75E2                    jne _printNumLoop
+  1733                                 
+  1734                                 
+  1735                                 _printNumCetak:
+  1736                                 
+  1737                                 
+  1738 000010FF 833D[00000000]FF        cmp dword [_printNumNegative], -1
+  1739 00001106 7508                    jne _printNumCetakNext
+  1740                                 
+  1741                                 
+  1742 00001108 C681[00000000]2D        mov byte [_printNumStr + ecx], '-'
+  1743 0000110F 83E901                  sub ecx, 1
+  1744                                 
+  1745                                 
+  1746                                 _printNumCetakNext:
+  1747                                 
+  1748                                 
+  1749 00001112 BAFF000000              mov edx, _printNumStrLen
+  1750 00001117 29CA                    sub edx, ecx
+  1751 00001119 83EA01                  sub edx, 1
+  1752                                 
+  1753                                 
+  1754 0000111C 81C1[00000000]          add ecx, _printNumStr
+  1755 00001122 83C101                  add ecx, 1
+  1756                                 
+  1757 00001125 833D[00000000]01        cmp dword[logCheck], 1
+  1758 0000112C 0F84C6F0FFFF            je _printToLog
+  1759                                 
+  1760                                 
+  1761 00001132 B804000000              mov eax, 4
+  1762 00001137 BB01000000              mov ebx, 1
+  1763 0000113C CD80                    int 0x80
+  1764                                 
+  1765                                 _printNumExit:
+  1766                                 
+  1767 0000113E C3                      ret
+  1768                                 
+  1769                                 
+  1770                                 %line 18+1 main.asm
+  1771                                 
+  1772                                 
+  1773                                 %line 3+1 log.asm
+  1774                                 
+  1775                                 [section .data]
+  1776                                 
+  1777                                 [section .bss]
+  1778                                 
+  1779                                 [section .text]
+  1780                                 
+  1781                                 _createFile :
+  1782                                 
+  1783 0000113F B808000000              mov eax, 8
+  1784 00001144 BB[00000000]            mov ebx, log
+  1785 00001149 B9BC020000              mov ecx, 0700
+  1786 0000114E CD80                    int 0x80
+  1787                                 
+  1788 00001150 C3                      ret
+  1789                                 
+  1790                                 _openFile :
+  1791                                 
+  1792 00001151 B805000000              mov eax, 5
+  1793 00001156 BAFF010000              mov edx, 01FF
+  1794 0000115B B900000000              mov ecx, 0
+  1795 00001160 BB[00000000]            mov ebx, log
+  1796 00001165 CD80                    int 80
+  1797                                 
+  1798 00001167 A3[00000000]            mov [isilog], eax
+  1799                                 
+  1800 0000116C C3                      ret
+  1801                                 
+  1802                                 _closeFile :
+  1803 0000116D B806000000              mov eax, 6
+  1804 00001172 BB[00000000]            mov ebx, log
+  1805 00001177 CD80                    int 80
+  1806                                 
+  1807 00001179 C3                      ret
+  1808                                 
+  1809                                 ask_for_log :
+  1810                                 
+  1811 0000117A B804000000              mov eax, 4
+  1812 0000117F BB01000000              mov ebx, 1
+  1813 00001184 B9[00000000]            mov ecx, ask_to_log
+  1814 00001189 BA87000000              mov edx, lask_to_log
+  1815 0000118E CD80                    int 0x80
+  1816                                 
+  1817 00001190 E85A0A0000              call _calc
+  1818                                 
+  1819 00001195 E878EEFFFF              call inputstring
+  1820                                 
+  1821 0000119A BB[00000000]            mov ebx, question
+  1822 0000119F E8D8EEFFFF              call copystring
+  1823                                 
+  1824 000011A4 C3                      ret
+  1825                                 
+  1826                                 _log_tempc :
+  1827                                 
+  1828 000011A5 B8[00000000]            mov eax, function
+  1829 000011AA E862F0FFFF              call logStr
+  1830                                 
+  1831 000011AF E8690A0000              call _space
+  1832                                 
+  1833 000011B4 C705[00000000]0100-     mov dword[logCheck], 1
+  1834 000011B4 0000               
+  1835 000011BE A1[00000000]            mov eax, [num1]
+  1836 000011C3 E8E8EEFFFF              call printFloat
+  1837                                 
+  1838 000011C8 E8500A0000              call _space
+  1839                                 
+  1840 000011CD E87B0A0000              call _log_result
+  1841                                 
+  1842 000011D2 C705[00000000]0100-     mov dword[logCheck], 1
+  1843 000011D2 0000               
+  1844 000011DC A1[00000000]            mov eax, [result1]
+  1845 000011E1 E8CAEEFFFF              call printFloat
+  1846 000011E6 B804000000              mov eax, 4
+  1847 000011EB 8B1D[00000000]          mov ebx, [isilog]
+  1848 000011F1 B9[00000000]            mov ecx, rea
+  1849 000011F6 BA04000000              mov edx, lrea
+  1850 000011FB CD80                    int 80
+  1851                                 
+  1852 000011FD E81B0A0000              call _space
+  1853                                 
+  1854 00001202 C705[00000000]0100-     mov dword[logCheck], 1
+  1855 00001202 0000               
+  1856 0000120C A1[00000000]            mov eax, [result2]
+  1857 00001211 E89AEEFFFF              call printFloat
+  1858 00001216 B804000000              mov eax, 4
+  1859 0000121B 8B1D[00000000]          mov ebx, [isilog]
+  1860 00001221 B9[00000000]            mov ecx, kel
+  1861 00001226 BA02000000              mov edx, lkel
+  1862 0000122B CD80                    int 80
+  1863                                 
+  1864 0000122D E8EB090000              call _space
+  1865                                 
+  1866 00001232 C705[00000000]0100-     mov dword[logCheck], 1
+  1867 00001232 0000               
+  1868 0000123C A1[00000000]            mov eax, [result3]
+  1869 00001241 E86AEEFFFF              call printFloat
+  1870 00001246 B804000000              mov eax, 4
+  1871 0000124B 8B1D[00000000]          mov ebx, [isilog]
+  1872 00001251 B9[00000000]            mov ecx, fahr
+  1873 00001256 BA04000000              mov edx, lfahr
+  1874 0000125B CD80                    int 80
+  1875                                 
+  1876 0000125D E8D3090000              call _newline
+  1877                                 
+  1878 00001262 C3                      ret
+  1879                                 
+  1880                                 _log_tempr :
+  1881                                 
+  1882 00001263 B8[00000000]            mov eax, function
+  1883 00001268 E8A4EFFFFF              call logStr
+  1884                                 
+  1885 0000126D E8AB090000              call _space
+  1886                                 
+  1887 00001272 C705[00000000]0100-     mov dword[logCheck], 1
+  1888 00001272 0000               
+  1889 0000127C A1[00000000]            mov eax, [num1]
+  1890 00001281 E82AEEFFFF              call printFloat
+  1891                                 
+  1892 00001286 E892090000              call _space
+  1893                                 
+  1894 0000128B E8BD090000              call _log_result
+  1895                                 
+  1896 00001290 C705[00000000]0100-     mov dword[logCheck], 1
+  1897 00001290 0000               
+  1898 0000129A A1[00000000]            mov eax, [result1]
+  1899 0000129F E80CEEFFFF              call printFloat
+  1900 000012A4 B804000000              mov eax, 4
+  1901 000012A9 8B1D[00000000]          mov ebx, [isilog]
+  1902 000012AF B9[00000000]            mov ecx, cel
+  1903 000012B4 BA04000000              mov edx, lcel
+  1904 000012B9 CD80                    int 80
+  1905                                 
+  1906 000012BB E85D090000              call _space
+  1907                                 
+  1908 000012C0 C705[00000000]0100-     mov dword[logCheck], 1
+  1909 000012C0 0000               
+  1910 000012CA A1[00000000]            mov eax, [result2]
+  1911 000012CF E8DCEDFFFF              call printFloat
+  1912 000012D4 B804000000              mov eax, 4
+  1913 000012D9 8B1D[00000000]          mov ebx, [isilog]
+  1914 000012DF B9[00000000]            mov ecx, kel
+  1915 000012E4 BA02000000              mov edx, lkel
+  1916 000012E9 CD80                    int 80
+  1917                                 
+  1918 000012EB E82D090000              call _space
+  1919                                 
+  1920 000012F0 C705[00000000]0100-     mov dword[logCheck], 1
+  1921 000012F0 0000               
+  1922 000012FA A1[00000000]            mov eax, [result3]
+  1923 000012FF E8ACEDFFFF              call printFloat
+  1924 00001304 B804000000              mov eax, 4
+  1925 00001309 8B1D[00000000]          mov ebx, [isilog]
+  1926 0000130F B9[00000000]            mov ecx, fahr
+  1927 00001314 BA04000000              mov edx, lfahr
+  1928 00001319 CD80                    int 80
+  1929                                 
+  1930 0000131B E815090000              call _newline
+  1931                                 
+  1932 00001320 C3                      ret
+  1933                                 
+  1934                                 _log_tempk :
+  1935                                 
+  1936 00001321 B8[00000000]            mov eax, function
+  1937 00001326 E8E6EEFFFF              call logStr
+  1938                                 
+  1939 0000132B E8ED080000              call _space
+  1940                                 
+  1941 00001330 C705[00000000]0100-     mov dword[logCheck], 1
+  1942 00001330 0000               
+  1943 0000133A A1[00000000]            mov eax, [num1]
+  1944 0000133F E86CEDFFFF              call printFloat
+  1945                                 
+  1946 00001344 E8D4080000              call _space
+  1947                                 
+  1948 00001349 E8FF080000              call _log_result
+  1949                                 
+  1950 0000134E C705[00000000]0100-     mov dword[logCheck], 1
+  1951 0000134E 0000               
+  1952 00001358 A1[00000000]            mov eax, [result1]
+  1953 0000135D E84EEDFFFF              call printFloat
+  1954 00001362 B804000000              mov eax, 4
+  1955 00001367 8B1D[00000000]          mov ebx, [isilog]
+  1956 0000136D B9[00000000]            mov ecx, cel
+  1957 00001372 BA04000000              mov edx, lcel
+  1958 00001377 CD80                    int 80
+  1959                                 
+  1960 00001379 E89F080000              call _space
+  1961                                 
+  1962 0000137E C705[00000000]0100-     mov dword[logCheck], 1
+  1963 0000137E 0000               
+  1964 00001388 A1[00000000]            mov eax, [result2]
+  1965 0000138D E81EEDFFFF              call printFloat
+  1966 00001392 B804000000              mov eax, 4
+  1967 00001397 8B1D[00000000]          mov ebx, [isilog]
+  1968 0000139D B9[00000000]            mov ecx, rea
+  1969 000013A2 BA04000000              mov edx, lrea
+  1970 000013A7 CD80                    int 80
+  1971                                 
+  1972 000013A9 E86F080000              call _space
+  1973                                 
+  1974 000013AE C705[00000000]0100-     mov dword[logCheck], 1
+  1975 000013AE 0000               
+  1976 000013B8 A1[00000000]            mov eax, [result3]
+  1977 000013BD E8EEECFFFF              call printFloat
+  1978 000013C2 B804000000              mov eax, 4
+  1979 000013C7 8B1D[00000000]          mov ebx, [isilog]
+  1980 000013CD B9[00000000]            mov ecx, fahr
+  1981 000013D2 BA04000000              mov edx, lfahr
+  1982 000013D7 CD80                    int 80
+  1983                                 
+  1984 000013D9 E857080000              call _newline
+  1985                                 
+  1986 000013DE C3                      ret
+  1987                                 
+  1988                                 _log_tempf :
+  1989                                 
+  1990 000013DF B8[00000000]            mov eax, function
+  1991 000013E4 E828EEFFFF              call logStr
+  1992                                 
+  1993 000013E9 E82F080000              call _space
+  1994                                 
+  1995 000013EE C705[00000000]0100-     mov dword[logCheck], 1
+  1996 000013EE 0000               
+  1997 000013F8 A1[00000000]            mov eax, [num1]
+  1998 000013FD E8AEECFFFF              call printFloat
+  1999                                 
+  2000 00001402 E816080000              call _space
+  2001                                 
+  2002 00001407 E841080000              call _log_result
+  2003                                 
+  2004 0000140C E80C080000              call _space
+  2005                                 
+  2006 00001411 C705[00000000]0100-     mov dword[logCheck], 1
+  2007 00001411 0000               
+  2008 0000141B A1[00000000]            mov eax, [result1]
+  2009 00001420 E88BECFFFF              call printFloat
+  2010 00001425 B804000000              mov eax, 4
+  2011 0000142A 8B1D[00000000]          mov ebx, [isilog]
+  2012 00001430 B9[00000000]            mov ecx, cel
+  2013 00001435 BA04000000              mov edx, lcel
+  2014 0000143A CD80                    int 80
+  2015                                 
+  2016 0000143C E8DC070000              call _space
+  2017                                 
+  2018 00001441 C705[00000000]0100-     mov dword[logCheck], 1
+  2019 00001441 0000               
+  2020 0000144B A1[00000000]            mov eax, [result2]
+  2021 00001450 E85BECFFFF              call printFloat
+  2022 00001455 B804000000              mov eax, 4
+  2023 0000145A 8B1D[00000000]          mov ebx, [isilog]
+  2024 00001460 B9[00000000]            mov ecx, rea
+  2025 00001465 BA04000000              mov edx, lrea
+  2026 0000146A CD80                    int 80
+  2027                                 
+  2028 0000146C E8AC070000              call _space
+  2029                                 
+  2030 00001471 C705[00000000]0100-     mov dword[logCheck], 1
+  2031 00001471 0000               
+  2032 0000147B A1[00000000]            mov eax, [result3]
+  2033 00001480 E82BECFFFF              call printFloat
+  2034 00001485 B804000000              mov eax, 4
+  2035 0000148A 8B1D[00000000]          mov ebx, [isilog]
+  2036 00001490 B9[00000000]            mov ecx, kel
+  2037 00001495 BA02000000              mov edx, lkel
+  2038 0000149A CD80                    int 80
+  2039                                 
+  2040 0000149C E894070000              call _newline
+  2041                                 
+  2042 000014A1 C3                      ret
+  2043                                 
+  2044                                 _log_1inputInt
+  2045                                 
+  2046 000014A2 B8[00000000]            mov eax, function
+  2047 000014A7 E865EDFFFF              call logStr
+  2048                                 
+  2049 000014AC E86C070000              call _space
+  2050                                 
+  2051 000014B1 C705[00000000]0100-     mov dword[logCheck], 1
+  2052 000014B1 0000               
+  2053 000014BB A1[00000000]            mov eax, [num1]
+  2054 000014C0 E8D9FBFFFF              call printNum
+  2055                                 
+  2056 000014C5 E853070000              call _space
+  2057                                 
+  2058 000014CA E87E070000              call _log_result
+  2059                                 
+  2060 000014CF C705[00000000]0100-     mov dword[logCheck], 1
+  2061 000014CF 0000               
+  2062 000014D9 A1[00000000]            mov eax, [result1]
+  2063 000014DE E8BBFBFFFF              call printNum
+  2064                                 
+  2065 000014E3 E84D070000              call _newline
+  2066                                 
+  2067 000014E8 C3                      ret
+  2068                                 
+  2069                                 _log_2inputInt
+  2070                                 
+  2071 000014E9 B8[00000000]            mov eax, function
+  2072 000014EE E81EEDFFFF              call logStr
+  2073                                 
+  2074 000014F3 E825070000              call _space
+  2075                                 
+  2076 000014F8 C705[00000000]0100-     mov dword[logCheck], 1
+  2077 000014F8 0000               
+  2078 00001502 A1[00000000]            mov eax, [num1]
+  2079 00001507 E892FBFFFF              call printNum
+  2080                                 
+  2081 0000150C E80C070000              call _space
+  2082                                 
+  2083 00001511 C705[00000000]0100-     mov dword[logCheck], 1
+  2084 00001511 0000               
+  2085 0000151B A1[00000000]            mov eax, [num2]
+  2086 00001520 E879FBFFFF              call printNum
+  2087                                 
+  2088 00001525 E8F3060000              call _space
+  2089                                 
+  2090 0000152A E81E070000              call _log_result
+  2091                                 
+  2092 0000152F C705[00000000]0100-     mov dword[logCheck], 1
+  2093 0000152F 0000               
+  2094 00001539 A1[00000000]            mov eax, [result1]
+  2095 0000153E E85BFBFFFF              call printNum
+  2096                                 
+  2097 00001543 E8ED060000              call _newline
+  2098                                 
+  2099 00001548 C3                      ret
+  2100                                 
+  2101                                 _log_3inputInt
+  2102                                 
+  2103 00001549 B8[00000000]            mov eax, function
+  2104 0000154E E8BEECFFFF              call logStr
+  2105                                 
+  2106 00001553 E8C5060000              call _space
+  2107                                 
+  2108 00001558 C705[00000000]0100-     mov dword[logCheck], 1
+  2109 00001558 0000               
+  2110 00001562 A1[00000000]            mov eax, [num1]
+  2111 00001567 E832FBFFFF              call printNum
+  2112                                 
+  2113 0000156C E8AC060000              call _space
+  2114                                 
+  2115 00001571 C705[00000000]0100-     mov dword[logCheck], 1
+  2116 00001571 0000               
+  2117 0000157B A1[00000000]            mov eax, [num2]
+  2118 00001580 E819FBFFFF              call printNum
+  2119                                 
+  2120 00001585 E893060000              call _space
+  2121                                 
+  2122 0000158A C705[00000000]0100-     mov dword[logCheck], 1
+  2123 0000158A 0000               
+  2124 00001594 A1[00000000]            mov eax, [num3]
+  2125 00001599 E800FBFFFF              call printNum
+  2126                                 
+  2127 0000159E E87A060000              call _space
+  2128                                 
+  2129 000015A3 E8A5060000              call _log_result
+  2130                                 
+  2131 000015A8 C705[00000000]0100-     mov dword[logCheck], 1
+  2132 000015A8 0000               
+  2133 000015B2 A1[00000000]            mov eax, [result1]
+  2134 000015B7 E8E2FAFFFF              call printNum
+  2135                                 
+  2136 000015BC E874060000              call _newline
+  2137                                 
+  2138 000015C1 C3                      ret
+  2139                                 
+  2140                                 _log_1inputFloat
+  2141                                 
+  2142 000015C2 B8[00000000]            mov eax, function
+  2143 000015C7 E845ECFFFF              call logStr
+  2144                                 
+  2145 000015CC E84C060000              call _space
+  2146                                 
+  2147 000015D1 C705[00000000]0100-     mov dword[logCheck], 1
+  2148 000015D1 0000               
+  2149 000015DB A1[00000000]            mov eax, [num1]
+  2150 000015E0 E8B9FAFFFF              call printNum
+  2151                                 
+  2152 000015E5 E833060000              call _space
+  2153                                 
+  2154 000015EA E85E060000              call _log_result
+  2155                                 
+  2156 000015EF C705[00000000]0100-     mov dword[logCheck], 1
+  2157 000015EF 0000               
+  2158 000015F9 A1[00000000]            mov eax, [result1]
+  2159 000015FE E8ADEAFFFF              call printFloat
+  2160                                 
+  2161 00001603 E82D060000              call _newline
+  2162                                 
+  2163 00001608 C3                      ret
+  2164                                 
+  2165                                 _log_2inputFloat
+  2166                                 
+  2167 00001609 B8[00000000]            mov eax, function
+  2168 0000160E E8FEEBFFFF              call logStr
+  2169                                 
+  2170 00001613 E805060000              call _space
+  2171                                 
+  2172 00001618 C705[00000000]0100-     mov dword[logCheck], 1
+  2173 00001618 0000               
+  2174 00001622 A1[00000000]            mov eax, [num1]
+  2175 00001627 E872FAFFFF              call printNum
+  2176                                 
+  2177 0000162C E8EC050000              call _space
+  2178                                 
+  2179 00001631 C705[00000000]0100-     mov dword[logCheck], 1
+  2180 00001631 0000               
+  2181 0000163B A1[00000000]            mov eax, [num2]
+  2182 00001640 E859FAFFFF              call printNum
+  2183                                 
+  2184 00001645 E8D3050000              call _space
+  2185                                 
+  2186 0000164A E8FE050000              call _log_result
+  2187                                 
+  2188 0000164F C705[00000000]0100-     mov dword[logCheck], 1
+  2189 0000164F 0000               
+  2190 00001659 A1[00000000]            mov eax, [result1]
+  2191 0000165E E84DEAFFFF              call printFloat
+  2192                                 
+  2193 00001663 E8CD050000              call _newline
+  2194                                 
+  2195 00001668 C3                      ret
+  2196                                 
+  2197                                 _log_3inputFloat
+  2198                                 
+  2199 00001669 B8[00000000]            mov eax, function
+  2200 0000166E E89EEBFFFF              call logStr
+  2201                                 
+  2202 00001673 E8A5050000              call _space
+  2203                                 
+  2204 00001678 C705[00000000]0100-     mov dword[logCheck], 1
+  2205 00001678 0000               
+  2206 00001682 A1[00000000]            mov eax, [num1]
+  2207 00001687 E812FAFFFF              call printNum
+  2208                                 
+  2209 0000168C E88C050000              call _space
+  2210                                 
+  2211 00001691 C705[00000000]0100-     mov dword[logCheck], 1
+  2212 00001691 0000               
+  2213 0000169B A1[00000000]            mov eax, [num2]
+  2214 000016A0 E8F9F9FFFF              call printNum
+  2215                                 
+  2216 000016A5 E873050000              call _space
+  2217                                 
+  2218 000016AA C705[00000000]0100-     mov dword[logCheck], 1
+  2219 000016AA 0000               
+  2220 000016B4 A1[00000000]            mov eax, [num3]
+  2221 000016B9 E8E0F9FFFF              call printNum
+  2222                                 
+  2223 000016BE E85A050000              call _space
+  2224                                 
+  2225 000016C3 E885050000              call _log_result
+  2226                                 
+  2227 000016C8 C705[00000000]0100-     mov dword[logCheck], 1
+  2228 000016C8 0000               
+  2229 000016D2 A1[00000000]            mov eax, [result1]
+  2230 000016D7 E8D4E9FFFF              call printFloat
+  2231                                 
+  2232 000016DC E854050000              call _newline
+  2233                                 
+  2234 000016E1 C3                      ret
+  2235                                 
+  2236                                 log_open :
+  2237                                 
+  2238 000016E2 B9E7030000              mov ecx, 999
+  2239                                 
+  2240                                 next_open :
+  2241 000016E7 C781[00000000]0000-     mov dword[templog + ecx], 0
+  2242 000016E7 0000               
+  2243 000016F1 49                      dec ecx
+  2244 000016F2 83F900                  cmp ecx, 0
+  2245 000016F5 75EE                    jne next_open
+  2246                                 
+  2247 000016F7 B805000000              mov eax, 5
+  2248 000016FC BB[00000000]            mov ebx, log
+  2249 00001701 B900000000              mov ecx, 0
+  2250 00001706 BA09030000              mov edx, 0777
+  2251 0000170B CD80                    int 0x80
+  2252 0000170D A3[00000000]            mov [isilog], eax
+  2253                                 
+  2254 00001712 B803000000              mov eax, 3
+  2255 00001717 8B1D[00000000]          mov ebx, [isilog]
+  2256 0000171D B9[00000000]            mov ecx, templog
+  2257 00001722 BAE8030000              mov edx, 1000
+  2258 00001727 CD80                    int 0x80
+  2259                                 
+  2260 00001729 B804000000              mov eax, 4
+  2261 0000172E BB01000000              mov ebx, 1
+  2262 00001733 B9[00000000]            mov ecx, loghead
+  2263 00001738 BA63000000              mov edx, lloghead
+  2264 0000173D CD80                    int 80
+  2265                                 
+  2266 0000173F B804000000              mov eax, 4
+  2267 00001744 BB01000000              mov ebx, 1
+  2268 00001749 B9[00000000]            mov ecx, templog
+  2269 0000174E BAE8030000              mov edx, 1000
+  2270 00001753 CD80                    int 80
+  2271                                 
+  2272 00001755 E80B050000              call _n
+  2273                                 
+  2274 0000175A B806000000              mov eax, 6
+  2275 0000175F 8B1D[00000000]          mov ebx, [isilog]
+  2276 00001765 CD80                    int 0x80
+  2277                                 
+  2278 00001767 E8CEF9FFFF              call _createFile
+  2279 0000176C A3[00000000]            mov [isilog], eax
+  2280                                 
+  2281 00001771 C3                      ret
+  2282                                 
+  2283                                 %line 21+1 main.asm
+  2284                                 
+  2285                                 
+  2286                                 [section .data]
+  2287                                 
+  2288                                 
+  2289 00000018 43616C63756C61746F-     msg1 db 'Calculator CSIPB v1.0',10,'Calculator basic',10,10,'for basic aritmathic use',10,'(',27,'[36m','+',27,'[39m',') for adder, (',27,'[36m','-',27,'[39m',') for subtract, (',27,'[36m','*',27,'[39m',') for multiply, (',27,'[36m','/',27,'[39m',') for devide ',10,10,'For count 2D area',10,' - circle    type ',27,'[36m','area.c ',27,'[39m',' and 1 arguments for radius',10,' - square    type ',27,'[36m','area.s ',27,'[39m',' and 1 arguments for side',10,' - diamond   type ',27,'[36m','area.d ',27,'[39m',' and 1 arguments for diagonal length ',10,' - triangle  type ',27,'[36m','area.t ',27,'[39m',' and 2 arguments for base and height ',10,' - rectangle type ',27,'[36m','area.r ',27,'[39m',' and 2 arguments for height and width ',10,' - trapezium type ',27,'[36m','area.tr',27,'[39m',' and 3 arguments for top, bottom and height ',10,10,'For count 3D volume ',10,' - cube                type ',27,'[36m','vol.cube',27,'[39m',' and 1 arguments for edge ',10,' - cuboid              type ',27,'[36m','vol.cubo',27,'[39m',' and 3 arguments for length, height, width ',10,' - cone                type ',27,'[36m','vol.con',27,'[39m','  and 2 arguments for radius, height ',10,' - sphere              type ',27,'[36m','vol.sph',27,'[39m','  and 1 arguments for radius ',10,' - cylinder            type ',27,'[36m','vol.cyl',27,'[39m','  and 2 arguments for radius, height ',10,' - square pyramid      type ',27,'[36m','vol.spy',27,'[39m','  and 2 arguments for side, height ',10,' - triangle pyramid    type ',27,'[36m','vol.tpy',27,'[39m','  and 3 arguments for base, triangle height, pyramid height ',10,' - rectangle pyramid   type ',27,'[36m','vol.rpy',27,'[39m','  and 3 arguments for rectangle height, rectangle width, pyramid height ',10,' - triangle prism      type ',27,'[36m','vol.tpr',27,'[39m','  and 3 arguments for base, triangle height, prism height ',10,' - rectangle prism     type ',27,'[36m','vol.rpr',27,'[39m','  and 3 arguments for rectangle height, rectangle width, prism height ',10,10,'For converter temperature',10,'use (',27,'[36m','c',27,'[39m',') for Celcius (',27,'[36m','k',27,'[39m',') for Kelvin (',27,'[36m','r',27,'[39m',') for Reamur (',27,'[36m','f',27,'[39m',') for Fahrenheit and 1 argument for height temperature to convert',10
+  2290 00000018 722043534950422076-
+  2291 00000018 312E300A43616C6375-
+  2292 00000018 6C61746F7220626173-
+  2293 00000018 69630A0A666F722062-
+  2294 00000018 617369632061726974-
+  2295 00000018 6D6174686963207573-
+  2296 00000018 650A281B5B33366D2B-
+  2297 00000018 1B5B33396D2920666F-
+  2298 00000018 722061646465722C20-
+  2299 00000018 281B5B33366D2D1B5B-
+  2300 00000018 33396D2920666F7220-
+  2301 00000018 73756274726163742C-
+  2302 00000018 20281B5B33366D2A1B-
+  2303 00000018 5B33396D2920666F72-
+  2304 00000018 206D756C7469706C79-
+  2305 00000018 2C20281B5B33366D2F-
+  2306 00000018 1B5B33396D2920666F-
+  2307 00000018 722064657669646520-
+  2308 00000018 0A0A466F7220636F75-
+  2309 00000018 6E7420324420617265-
+  2310 00000018 610A202D2063697263-
+  2311 00000018 6C6520202020747970-
+  2312 00000018 65201B5B33366D6172-
+  2313 00000018 65612E63201B5B3339-
+  2314 00000018 6D20616E6420312061-
+  2315 00000018 7267756D656E747320-
+  2316 00000018 666F72207261646975-
+  2317 00000018 730A202D2073717561-
+  2318 00000018 726520202020747970-
+  2319 00000018 65201B5B33366D6172-
+  2320 00000018 65612E73201B5B3339-
+  2321 00000018 6D20616E6420312061-
+  2322 00000018 7267756D656E747320-
+  2323 00000018 666F7220736964650A-
+  2324 00000018 202D206469616D6F6E-
+  2325 00000018 642020207479706520-
+  2326 00000018 1B5B33366D61726561-
+  2327 00000018 2E64201B5B33396D20-
+  2328 00000018 616E64203120617267-
+  2329 00000018 756D656E747320666F-
+  2330 00000018 7220646961676F6E61-
+  2331 00000018 6C206C656E67746820-
+  2332 00000018 0A202D20747269616E-
+  2333 00000018 676C65202074797065-
+  2334 00000018 201B5B33366D617265-
+  2335 00000018 612E74201B5B33396D-
+  2336 00000018 20616E642032206172-
+  2337 00000018 67756D656E74732066-
+  2338 00000018 6F7220626173652061-
+  2339 00000018 6E6420686569676874-
+  2340 00000018 200A202D2072656374-
+  2341 00000018 616E676C6520747970-
+  2342 00000018 65201B5B33366D6172-
+  2343 00000018 65612E72201B5B3339-
+  2344 00000018 6D20616E6420322061-
+  2345 00000018 7267756D656E747320-
+  2346 00000018 666F72206865696768-
+  2347 00000018 7420616E6420776964-
+  2348 00000018 7468200A202D207472-
+  2349 00000018 6170657A69756D2074-
+  2350 00000018 797065201B5B33366D-
+  2351 00000018 617265612E74721B5B-
+  2352 00000018 33396D20616E642033-
+  2353 00000018 20617267756D656E74-
+  2354 00000018 7320666F7220746F70-
+  2355 00000018 2C20626F74746F6D20-
+  2356 00000018 616E64206865696768-
+  2357 00000018 74200A0A466F722063-
+  2358 00000018 6F756E742033442076-
+  2359 00000018 6F6C756D65200A202D-
+  2360 00000018 206375626520202020-
+  2361 00000018 202020202020202020-
+  2362 00000018 20202074797065201B-
+  2363 00000018 5B33366D766F6C2E63-
+  2364 00000018 7562651B5B33396D20-
+  2365 00000018 616E64203120617267-
+  2366 00000018 756D656E747320666F-
+  2367 00000018 722065646765200A20-
+  2368 00000018 2D206375626F696420-
+  2369 00000018 202020202020202020-
+  2370 00000018 202020207479706520-
+  2371 00000018 1B5B33366D766F6C2E-
+  2372 00000018 6375626F1B5B33396D-
+  2373 00000018 20616E642033206172-
+  2374 00000018 67756D656E74732066-
+  2375 00000018 6F72206C656E677468-
+  2376 00000018 2C206865696768742C-
+  2377 00000018 207769647468200A20-
+  2378 00000018 2D20636F6E65202020-
+  2379 00000018 202020202020202020-
+  2380 00000018 202020207479706520-
+  2381 00000018 1B5B33366D766F6C2E-
+  2382 00000018 636F6E1B5B33396D20-
+  2383 00000018 20616E642032206172-
+  2384 00000018 67756D656E74732066-
+  2385 00000018 6F7220726164697573-
+  2386 00000018 2C2068656967687420-
+  2387 00000018 0A202D207370686572-
+  2388 00000018 652020202020202020-
+  2389 00000018 202020202020747970-
+  2390 00000018 65201B5B33366D766F-
+  2391 00000018 6C2E7370681B5B3339-
+  2392 00000018 6D2020616E64203120-
+  2393 00000018 617267756D656E7473-
+  2394 00000018 20666F722072616469-
+  2395 00000018 7573200A202D206379-
+  2396 00000018 6C696E646572202020-
+  2397 00000018 202020202020202020-
+  2398 00000018 74797065201B5B3336-
+  2399 00000018 6D766F6C2E63796C1B-
+  2400 00000018 5B33396D2020616E64-
+  2401 00000018 203220617267756D65-
+  2402 00000018 6E747320666F722072-
+  2403 00000018 61646975732C206865-
+  2404 00000018 69676874200A202D20-
+  2405 00000018 737175617265207079-
+  2406 00000018 72616D696420202020-
+  2407 00000018 202074797065201B5B-
+  2408 00000018 33366D766F6C2E7370-
+  2409 00000018 791B5B33396D202061-
+  2410 00000018 6E6420322061726775-
+  2411 00000018 6D656E747320666F72-
+  2412 00000018 20736964652C206865-
+  2413 00000018 69676874200A202D20-
+  2414 00000018 747269616E676C6520-
+  2415 00000018 707972616D69642020-
+  2416 00000018 202074797065201B5B-
+  2417 00000018 33366D766F6C2E7470-
+  2418 00000018 791B5B33396D202061-
+  2419 00000018 6E6420332061726775-
+  2420 00000018 6D656E747320666F72-
+  2421 00000018 20626173652C207472-
+  2422 00000018 69616E676C65206865-
+  2423 00000018 696768742C20707972-
+  2424 00000018 616D69642068656967-
+  2425 00000018 6874200A202D207265-
+  2426 00000018 6374616E676C652070-
+  2427 00000018 7972616D6964202020-
+  2428 00000018 74797065201B5B3336-
+  2429 00000018 6D766F6C2E7270791B-
+  2430 00000018 5B33396D2020616E64-
+  2431 00000018 203320617267756D65-
+  2432 00000018 6E747320666F722072-
+  2433 00000018 656374616E676C6520-
+  2434 00000018 6865696768742C2072-
+  2435 00000018 656374616E676C6520-
+  2436 00000018 77696474682C207079-
+  2437 00000018 72616D696420686569-
+  2438 00000018 676874200A202D2074-
+  2439 00000018 7269616E676C652070-
+  2440 00000018 7269736D2020202020-
+  2441 00000018 2074797065201B5B33-
+  2442 00000018 366D766F6C2E747072-
+  2443 00000018 1B5B33396D2020616E-
+  2444 00000018 64203320617267756D-
+  2445 00000018 656E747320666F7220-
+  2446 00000018 626173652C20747269-
+  2447 00000018 616E676C6520686569-
+  2448 00000018 6768742C2070726973-
+  2449 00000018 6D2068656967687420-
+  2450 00000018 0A202D207265637461-
+  2451 00000018 6E676C652070726973-
+  2452 00000018 6D2020202020747970-
+  2453 00000018 65201B5B33366D766F-
+  2454 00000018 6C2E7270721B5B3339-
+  2455 00000018 6D2020616E64203320-
+  2456 00000018 617267756D656E7473-
+  2457 00000018 20666F722072656374-
+  2458 00000018 616E676C6520686569-
+  2459 00000018 6768742C2072656374-
+  2460 00000018 616E676C6520776964-
+  2461 00000018 74682C20707269736D-
+  2462 00000018 20686569676874200A-
+  2463 00000018 0A466F7220636F6E76-
+  2464 00000018 65727465722074656D-
+  2465 00000018 70657261747572650A-
+  2466 00000018 75736520281B5B3336-
+  2467 00000018 6D631B5B33396D2920-
+  2468 00000018 666F722043656C6369-
+  2469 00000018 757320281B5B33366D-
+  2470 00000018 6B1B5B33396D292066-
+  2471 00000018 6F72204B656C76696E-
+  2472 00000018 20281B5B33366D721B-
+  2473 00000018 5B33396D2920666F72-
+  2474 00000018 205265616D75722028-
+  2475 00000018 1B5B33366D661B5B33-
+  2476 00000018 396D2920666F722046-
+  2477 00000018 616872656E68656974-
+  2478 00000018 20616E642031206172-
+  2479 00000018 67756D656E7420666F-
+  2480 00000018 722068656967687420-
+  2481 00000018 74656D706572617475-
+  2482 00000018 726520746F20636F6E-
+  2483 00000018 766572740A         
+  2484                                  lmsg1 equ $ - msg1
+  2485                                 
+  2486 000006EF 43616C63756C61746F-     msg2 db 'Calculator CSIPB v1.0',10,'Calculator basic',10,10,'for basic aritmathic use',10,'(',27,'[36m','+',27,'[39m',') for adder, (',27,'[36m','-',27,'[39m',') for subtract, (',27,'[36m','*',27,'[39m',') for multiply, (',27,'[36m','/',27,'[39m',') for devide ',10
+  2487 000006EF 722043534950422076-
+  2488 000006EF 312E300A43616C6375-
+  2489 000006EF 6C61746F7220626173-
+  2490 000006EF 69630A0A666F722062-
+  2491 000006EF 617369632061726974-
+  2492 000006EF 6D6174686963207573-
+  2493 000006EF 650A281B5B33366D2B-
+  2494 000006EF 1B5B33396D2920666F-
+  2495 000006EF 722061646465722C20-
+  2496 000006EF 281B5B33366D2D1B5B-
+  2497 000006EF 33396D2920666F7220-
+  2498 000006EF 73756274726163742C-
+  2499 000006EF 20281B5B33366D2A1B-
+  2500 000006EF 5B33396D2920666F72-
+  2501 000006EF 206D756C7469706C79-
+  2502 000006EF 2C20281B5B33366D2F-
+  2503 000006EF 1B5B33396D2920666F-
+  2504 000006EF 722064657669646520-
+  2505 000006EF 0A                 
+  2506                                  lmsg2 equ $ - msg2
+  2507                                 
+  2508 0000079B 43616C63756C61746F-     msg3 db 'Calculator CSIPB v1.0',10,'Calculator temperature',10,10,'(',27,'[36m','c',27,'[39m',') for Celcius (',27,'[36m','k',27,'[39m',') for Kelvin (',27,'[36m','r',27,'[39m',') for Reamur (',27,'[36m','f',27,'[39m',') for Fahrenheit and 1 argument for height temperature to convert',10
+  2509 0000079B 722043534950422076-
+  2510 0000079B 312E300A43616C6375-
+  2511 0000079B 6C61746F722074656D-
+  2512 0000079B 70657261747572650A-
+  2513 0000079B 0A281B5B33366D631B-
+  2514 0000079B 5B33396D2920666F72-
+  2515 0000079B 2043656C6369757320-
+  2516 0000079B 281B5B33366D6B1B5B-
+  2517 0000079B 33396D2920666F7220-
+  2518 0000079B 4B656C76696E20281B-
+  2519 0000079B 5B33366D721B5B3339-
+  2520 0000079B 6D2920666F72205265-
+  2521 0000079B 616D757220281B5B33-
+  2522 0000079B 366D661B5B33396D29-
+  2523 0000079B 20666F722046616872-
+  2524 0000079B 656E6865697420616E-
+  2525 0000079B 64203120617267756D-
+  2526 0000079B 656E7420666F722068-
+  2527 0000079B 65696768742074656D-
+  2528 0000079B 706572617475726520-
+  2529 0000079B 746F20636F6E766572-
+  2530 0000079B 740A               
+  2531                                  lmsg3 equ $ - msg3
+  2532                                 
+  2533 00000863 43616C63756C61746F-     msg4 db 'Calculator CSIPB v1.0',10,'Calculator area',10,10,'for count 2D area',10,' - circle    type ',27,'[36m','area.c ',27,'[39m',' and 1 arguments for radius',10,' - square    type ',27,'[36m','area.s ',27,'[39m',' and 1 arguments for side',10,' - diamond   type ',27,'[36m','area.d ',27,'[39m',' and 1 arguments for diagonal length ',10,' - triangle  type ',27,'[36m','area.t ',27,'[39m',' and 2 arguments for base and height ',10,' - rectangle type ',27,'[36m','area.r ',27,'[39m',' and 2 arguments for height and width ',10,' - trapezium type ',27,'[36m','area.tr',27,'[39m',' and 3 arguments for top, bottom and height ',10
+  2534 00000863 722043534950422076-
+  2535 00000863 312E300A43616C6375-
+  2536 00000863 6C61746F7220617265-
+  2537 00000863 610A0A666F7220636F-
+  2538 00000863 756E74203244206172-
+  2539 00000863 65610A202D20636972-
+  2540 00000863 636C65202020207479-
+  2541 00000863 7065201B5B33366D61-
+  2542 00000863 7265612E63201B5B33-
+  2543 00000863 396D20616E64203120-
+  2544 00000863 617267756D656E7473-
+  2545 00000863 20666F722072616469-
+  2546 00000863 75730A202D20737175-
+  2547 00000863 617265202020207479-
+  2548 00000863 7065201B5B33366D61-
+  2549 00000863 7265612E73201B5B33-
+  2550 00000863 396D20616E64203120-
+  2551 00000863 617267756D656E7473-
+  2552 00000863 20666F722073696465-
+  2553 00000863 0A202D206469616D6F-
+  2554 00000863 6E6420202074797065-
+  2555 00000863 201B5B33366D617265-
+  2556 00000863 612E64201B5B33396D-
+  2557 00000863 20616E642031206172-
+  2558 00000863 67756D656E74732066-
+  2559 00000863 6F7220646961676F6E-
+  2560 00000863 616C206C656E677468-
+  2561 00000863 200A202D2074726961-
+  2562 00000863 6E676C652020747970-
+  2563 00000863 65201B5B33366D6172-
+  2564 00000863 65612E74201B5B3339-
+  2565 00000863 6D20616E6420322061-
+  2566 00000863 7267756D656E747320-
+  2567 00000863 666F72206261736520-
+  2568 00000863 616E64206865696768-
+  2569 00000863 74200A202D20726563-
+  2570 00000863 74616E676C65207479-
+  2571 00000863 7065201B5B33366D61-
+  2572 00000863 7265612E72201B5B33-
+  2573 00000863 396D20616E64203220-
+  2574 00000863 617267756D656E7473-
+  2575 00000863 20666F722068656967-
+  2576 00000863 687420616E64207769-
+  2577 00000863 647468200A202D2074-
+  2578 00000863 726170657A69756D20-
+  2579 00000863 74797065201B5B3336-
+  2580 00000863 6D617265612E74721B-
+  2581 00000863 5B33396D20616E6420-
+  2582 00000863 3320617267756D656E-
+  2583 00000863 747320666F7220746F-
+  2584 00000863 702C20626F74746F6D-
+  2585 00000863 20616E642068656967-
+  2586 00000863 6874200A           
+  2587                                  lmsg4 equ $ - msg4
+  2588                                 
+  2589 00000A44 43616C63756C61746F-     msg5 db 'Calculator CSIPB v1.0',10,'Calculator volume',10,10,' - cube                type ',27,'[36m','vol.cube',27,'[39m',' and 1 arguments for edge ',10,' - cuboid              type ',27,'[36m','vol.cubo',27,'[39m',' and 3 arguments for length, height, width ',10,' - cone                type ',27,'[36m','vol.con',27,'[39m','  and 2 arguments for radius, height ',10,' - sphere              type ',27,'[36m','vol.sph',27,'[39m','  and 1 arguments for radius ',10,' - cylinder            type ',27,'[36m','vol.cyl',27,'[39m','  and 2 arguments for radius, height ',10,' - square pyramid      type ',27,'[36m','vol.spy',27,'[39m','  and 2 arguments for side, height ',10,' - triangle pyramid    type ',27,'[36m','vol.tpy',27,'[39m','  and 3 arguments for base, triangle height, pyramid height ',10,' - rectangle pyramid   type ',27,'[36m','vol.rpy',27,'[39m','  and 3 arguments for rectangle height, rectangle width, pyramid height ',10,' - triangle prism      type ',27,'[36m','vol.tpr',27,'[39m','  and 3 arguments for base, triangle height, prism height ',10,' - rectangle prism     type ',27,'[36m','vol.rpr',27,'[39m','  and 3 arguments for rectangle height, rectangle width, prism height ',10
+  2590 00000A44 722043534950422076-
+  2591 00000A44 312E300A43616C6375-
+  2592 00000A44 6C61746F7220766F6C-
+  2593 00000A44 756D650A0A202D2063-
+  2594 00000A44 756265202020202020-
+  2595 00000A44 202020202020202020-
+  2596 00000A44 2074797065201B5B33-
+  2597 00000A44 366D766F6C2E637562-
+  2598 00000A44 651B5B33396D20616E-
+  2599 00000A44 64203120617267756D-
+  2600 00000A44 656E747320666F7220-
+  2601 00000A44 65646765200A202D20-
+  2602 00000A44 6375626F6964202020-
+  2603 00000A44 202020202020202020-
+  2604 00000A44 202074797065201B5B-
+  2605 00000A44 33366D766F6C2E6375-
+  2606 00000A44 626F1B5B33396D2061-
+  2607 00000A44 6E6420332061726775-
+  2608 00000A44 6D656E747320666F72-
+  2609 00000A44 206C656E6774682C20-
+  2610 00000A44 6865696768742C2077-
+  2611 00000A44 69647468200A202D20-
+  2612 00000A44 636F6E652020202020-
+  2613 00000A44 202020202020202020-
+  2614 00000A44 202074797065201B5B-
+  2615 00000A44 33366D766F6C2E636F-
+  2616 00000A44 6E1B5B33396D202061-
+  2617 00000A44 6E6420322061726775-
+  2618 00000A44 6D656E747320666F72-
+  2619 00000A44 207261646975732C20-
+  2620 00000A44 686569676874200A20-
+  2621 00000A44 2D2073706865726520-
+  2622 00000A44 202020202020202020-
+  2623 00000A44 202020207479706520-
+  2624 00000A44 1B5B33366D766F6C2E-
+  2625 00000A44 7370681B5B33396D20-
+  2626 00000A44 20616E642031206172-
+  2627 00000A44 67756D656E74732066-
+  2628 00000A44 6F7220726164697573-
+  2629 00000A44 200A202D2063796C69-
+  2630 00000A44 6E6465722020202020-
+  2631 00000A44 202020202020207479-
+  2632 00000A44 7065201B5B33366D76-
+  2633 00000A44 6F6C2E63796C1B5B33-
+  2634 00000A44 396D2020616E642032-
+  2635 00000A44 20617267756D656E74-
+  2636 00000A44 7320666F7220726164-
+  2637 00000A44 6975732C2068656967-
+  2638 00000A44 6874200A202D207371-
+  2639 00000A44 756172652070797261-
+  2640 00000A44 6D6964202020202020-
+  2641 00000A44 74797065201B5B3336-
+  2642 00000A44 6D766F6C2E7370791B-
+  2643 00000A44 5B33396D2020616E64-
+  2644 00000A44 203220617267756D65-
+  2645 00000A44 6E747320666F722073-
+  2646 00000A44 6964652C2068656967-
+  2647 00000A44 6874200A202D207472-
+  2648 00000A44 69616E676C65207079-
+  2649 00000A44 72616D696420202020-
+  2650 00000A44 74797065201B5B3336-
+  2651 00000A44 6D766F6C2E7470791B-
+  2652 00000A44 5B33396D2020616E64-
+  2653 00000A44 203320617267756D65-
+  2654 00000A44 6E747320666F722062-
+  2655 00000A44 6173652C2074726961-
+  2656 00000A44 6E676C652068656967-
+  2657 00000A44 68742C20707972616D-
+  2658 00000A44 696420686569676874-
+  2659 00000A44 200A202D2072656374-
+  2660 00000A44 616E676C6520707972-
+  2661 00000A44 616D69642020207479-
+  2662 00000A44 7065201B5B33366D76-
+  2663 00000A44 6F6C2E7270791B5B33-
+  2664 00000A44 396D2020616E642033-
+  2665 00000A44 20617267756D656E74-
+  2666 00000A44 7320666F7220726563-
+  2667 00000A44 74616E676C65206865-
+  2668 00000A44 696768742C20726563-
+  2669 00000A44 74616E676C65207769-
+  2670 00000A44 6474682C2070797261-
+  2671 00000A44 6D6964206865696768-
+  2672 00000A44 74200A202D20747269-
+  2673 00000A44 616E676C6520707269-
+  2674 00000A44 736D20202020202074-
+  2675 00000A44 797065201B5B33366D-
+  2676 00000A44 766F6C2E7470721B5B-
+  2677 00000A44 33396D2020616E6420-
+  2678 00000A44 3320617267756D656E-
+  2679 00000A44 747320666F72206261-
+  2680 00000A44 73652C20747269616E-
+  2681 00000A44 676C65206865696768-
+  2682 00000A44 742C20707269736D20-
+  2683 00000A44 686569676874200A20-
+  2684 00000A44 2D2072656374616E67-
+  2685 00000A44 6C6520707269736D20-
+  2686 00000A44 202020207479706520-
+  2687 00000A44 1B5B33366D766F6C2E-
+  2688 00000A44 7270721B5B33396D20-
+  2689 00000A44 20616E642033206172-
+  2690 00000A44 67756D656E74732066-
+  2691 00000A44 6F722072656374616E-
+  2692 00000A44 676C65206865696768-
+  2693 00000A44 742C2072656374616E-
+  2694 00000A44 676C65207769647468-
+  2695 00000A44 2C20707269736D2068-
+  2696 00000A44 6569676874200A     
+  2697                                  lmsg5 equ $ - msg5
+  2698                                 
+  2699 00000E0E 0A2863616C632920        calc db 10,'(calc) '
+  2700                                  lcalc equ $ - calc
+  2701                                 
+  2702 00000E16 726573756C74203D20      result db 'result = '
+  2703                                  lresult equ $ - result
+  2704                                 
+  2705 00000E1F 2D2D2D2D2D2D2D2D2D-     notfound db '-------------------------------',10,'      Function not found',10,'-------------------------------',10
+  2706 00000E1F 2D2D2D2D2D2D2D2D2D-
+  2707 00000E1F 2D2D2D2D2D2D2D2D2D-
+  2708 00000E1F 2D2D2D2D0A20202020-
+  2709 00000E1F 202046756E6374696F-
+  2710 00000E1F 6E206E6F7420666F75-
+  2711 00000E1F 6E640A2D2D2D2D2D2D-
+  2712 00000E1F 2D2D2D2D2D2D2D2D2D-
+  2713 00000E1F 2D2D2D2D2D2D2D2D2D-
+  2714 00000E1F 2D2D2D2D2D2D2D0A   
+  2715                                  lnotfound equ $ - notfound
+  2716                                 
+  2717 00000E78 1B5B33316D2D2D2D2D-     FPEtext db 27,'[31m','-------------------------------',10,'   Floating Point Exception',10,'-------------------------------',10,27,'[39m',10
+  2718 00000E78 2D2D2D2D2D2D2D2D2D-
+  2719 00000E78 2D2D2D2D2D2D2D2D2D-
+  2720 00000E78 2D2D2D2D2D2D2D2D2D-
+  2721 00000E78 0A202020466C6F6174-
+  2722 00000E78 696E6720506F696E74-
+  2723 00000E78 20457863657074696F-
+  2724 00000E78 6E0A2D2D2D2D2D2D2D-
+  2725 00000E78 2D2D2D2D2D2D2D2D2D-
+  2726 00000E78 2D2D2D2D2D2D2D2D2D-
+  2727 00000E78 2D2D2D2D2D2D0A1B5B-
+  2728 00000E78 33396D0A           
+  2729                                  lFPEtext equ $ - FPEtext
+  2730                                 
+  2731 00000EDF 1B5B33366D2D2D2D2D-     loghead db 27,'[36m','-------------------------------',10,'      History Calculator',10,'-------------------------------',10,27,'[39m',
+  2732 00000EDF 2D2D2D2D2D2D2D2D2D-
+  2733 00000EDF 2D2D2D2D2D2D2D2D2D-
+  2734 00000EDF 2D2D2D2D2D2D2D2D2D-
+  2735 00000EDF 0A2020202020204869-
+  2736 00000EDF 73746F72792043616C-
+  2737 00000EDF 63756C61746F720A2D-
+  2738 00000EDF 2D2D2D2D2D2D2D2D2D-
+  2739 00000EDF 2D2D2D2D2D2D2D2D2D-
+  2740 00000EDF 2D2D2D2D2D2D2D2D2D-
+  2741 00000EDF 2D2D2D0A1B5B33396D 
+  2742                                  lloghead equ $ - loghead
+  2743                                 
+  2744 00000F42 0A2D2D2D2D2D2D2D2D-     ask_to_log db 10,'----------------------------------------------',10,'      Do you want to save in log ? (y/n)',10,'----------------------------------------------'
+  2745 00000F42 2D2D2D2D2D2D2D2D2D-
+  2746 00000F42 2D2D2D2D2D2D2D2D2D-
+  2747 00000F42 2D2D2D2D2D2D2D2D2D-
+  2748 00000F42 2D2D2D2D2D2D2D2D2D-
+  2749 00000F42 2D2D0A202020202020-
+  2750 00000F42 446F20796F75207761-
+  2751 00000F42 6E7420746F20736176-
+  2752 00000F42 6520696E206C6F6720-
+  2753 00000F42 3F2028792F6E290A2D-
+  2754 00000F42 2D2D2D2D2D2D2D2D2D-
+  2755 00000F42 2D2D2D2D2D2D2D2D2D-
+  2756 00000F42 2D2D2D2D2D2D2D2D2D-
+  2757 00000F42 2D2D2D2D2D2D2D2D2D-
+  2758 00000F42 2D2D2D2D2D2D2D2D2D 
+  2759                                  lask_to_log equ $ - ask_to_log
+  2760                                 
+  2761                                 
+  2762                                 
+  2763 00000FC9 2B00                    plus db '+',0
+  2764                                  lplus equ $ - plus
+  2765                                 
+  2766 00000FCB 2D00                    minus db '-',0
+  2767                                  lminus equ $ - minus
+  2768                                 
+  2769 00000FCD 2F00                    divide db '/',0
+  2770                                  ldivide equ $ - divide
+  2771                                 
+  2772 00000FCF 2A00                    multiply db '*',0
+  2773                                  lmultiply equ $ - multiply
+  2774                                 
+  2775                                 
+  2776                                 
+  2777 00000FD1 617265612E7400          triangle db 'area.t',0
+  2778                                  ltriangle equ $ - triangle
+  2779                                 
+  2780 00000FD8 617265612E6300          circle db 'area.c',0
+  2781                                  lcircle equ $ - circle
+  2782                                 
+  2783 00000FDF 617265612E7200          rectangle db 'area.r',0
+  2784                                  lrectangle equ $ - rectangle
+  2785                                 
+  2786 00000FE6 617265612E7300          square db 'area.s',0
+  2787                                  lsquare equ $ - square
+  2788                                 
+  2789 00000FED 617265612E747200        trapezium db 'area.tr',0
+  2790                                  ltrapezium equ $ - trapezium
+  2791                                 
+  2792 00000FF5 617265612E6400          diamond db 'area.d',0
+  2793                                  ldiamond equ $ - diamond
+  2794                                 
+  2795                                 
+  2796                                 
+  2797 00000FFC 766F6C2E6375626500      cube db 'vol.cube',0
+  2798                                  lcube equ $ - cube
+  2799                                 
+  2800 00001005 766F6C2E6375626F00      cuboid db 'vol.cubo',0
+  2801                                  lcuboid equ $ - cuboid
+  2802                                 
+  2803 0000100E 766F6C2E636F6E00        cone db 'vol.con',0
+  2804                                  lcone equ $ - cone
+  2805                                 
+  2806 00001016 766F6C2E73706800        sphere db 'vol.sph',0
+  2807                                  lsphere equ $ - sphere
+  2808                                 
+  2809 0000101E 766F6C2E63796C00        cylinder db 'vol.cyl',0
+  2810                                  lcylinder equ $ - cylinder
+  2811                                 
+  2812 00001026 766F6C2E73707900        spyramid db 'vol.spy',0
+  2813                                  lspyramid equ $ - spyramid
+  2814                                 
+  2815 0000102E 766F6C2E74707900        tpyramid db 'vol.tpy',0
+  2816                                  ltpyramid equ $ - tpyramid
+  2817                                 
+  2818 00001036 766F6C2E72707900        rpyramid db 'vol.rpy',0
+  2819                                  lrpyramid equ $ - rpyramid
+  2820                                 
+  2821 0000103E 766F6C2E74707200        tprism db 'vol.tpr',0
+  2822                                  ltprism equ $ - tprism
+  2823                                 
+  2824 00001046 766F6C2E72707200        rprism db 'vol.rpr',0
+  2825                                  lrprism equ $ - rprism
+  2826                                 
+  2827                                 
+  2828                                 
+  2829                                 
+  2830                                 
+  2831 0000104E 6300                    tempc db 'c',0
+  2832                                  ltempc equ $ - tempc
+  2833                                 
+  2834                                 
+  2835                                 
+  2836 00001050 7200                    tempr db 'r',0
+  2837                                  ltempr equ $ - tempr
+  2838                                 
+  2839                                 
+  2840                                 
+  2841 00001052 6B00                    tempk db 'k',0
+  2842                                  ltempk equ $ - tempk
+  2843                                 
+  2844                                 
+  2845                                 
+  2846 00001054 6600                    tempf db 'f',0
+  2847                                  ltempf equ $ - tempf
+  2848                                 
+  2849                                 
+  2850                                 
+  2851 00001056 4B20                    kel db 'K '
+  2852                                  lkel equ $ - kel
+  2853                                 
+  2854 00001058 C2B04320                cel db '°C '
+  2855                                  lcel equ $ - cel
+  2856                                 
+  2857 0000105C C2B05220                rea db '°R '
+  2858                                  lrea equ $ - rea
+  2859                                 
+  2860 00001060 C2B04620                fahr db '°F '
+  2861                                  lfahr equ $ - fahr
+  2862                                 
+  2863 00001064 6578697400              close db 'exit',0
+  2864                                  lclose equ $ - close
+  2865                                 
+  2866 00001069 6C6F6700                logs db 'log',0
+  2867                                  llogs equ $ - logs
+  2868                                 
+  2869                                 
+  2870 0000106D 7900                    yes db 'y',0
+  2871                                 
+  2872 0000106F 2E2F6C6F672E747874-     log db './log.txt',0
+  2873 0000106F 00                 
+  2874                                 
+  2875 00001079 74656D00                temp dd 'tem'
+  2876                                 
+  2877 0000107D 766F6C00                vol dd 'vol'
+  2878                                 
+  2879 00001081 61720000                ar dd 'ar'
+  2880                                 
+  2881 00001085 62736300                bsc dd 'bsc'
+  2882                                 
+  2883 00001089 1B5B481B5B324A00        clr_scr db 27, '[H' , 27, '[2J', 0
+  2884                                 
+  2885                                  len_clr_scr equ $-clr_scr
+  2886                                 
+  2887 00001091 1B5B33316D00            red db 27,'[31m',0
+  2888                                  lred equ $ - red
+  2889                                 
+  2890 00001097 1B5B33396D00            white db 27,'[39m',0
+  2891                                  lwhite equ $ - white
+  2892                                 
+  2893 0000109D 20                      spasi db 32
+  2894                                  lspasi equ $ - spasi
+  2895                                 
+  2896 0000109E 0A                      newline db 10
+  2897                                  lnewline equ $ - newline
+  2898                                 
+  2899                                 
+  2900                                 
+  2901                                 [section .bss]
+  2902                                 
+  2903 0000030C <gap>                   question resb 255
+  2904                                 
+  2905 0000040B <gap>                   function resb 255
+  2906                                 
+  2907 0000050A <gap>                   num1 resd 1
+  2908                                 
+  2909 0000050E <gap>                   num2 resd 1
+  2910                                 
+  2911 00000512 <gap>                   num3 resd 1
+  2912                                 
+  2913 00000516 <gap>                   result1 resd 1
+  2914                                 
+  2915 0000051A <gap>                   result2 resd 1
+  2916                                 
+  2917 0000051E <gap>                   result3 resd 1
+  2918                                 
+  2919 00000522 <gap>                   isilog resd 1
+  2920                                 
+  2921 00000526 <gap>                   templog resb 1000
+  2922                                 [section .text]
+  2923                                 
+  2924                                 [global main]
+  2925                                 
+  2926                                 main :
+  2927                                 
+  2928 00001772 90                      nop
+  2929                                 
+  2930 00001773 55                      push ebp
+  2931 00001774 89E5                    mov ebp, esp
+  2932                                 
+  2933 00001776 E8BFF9FFFF              call _createFile
+  2934 0000177B A3[00000000]            mov [isilog], eax
+  2935                                 
+  2936 00001780 837D0401                cmp dword [ebp + 4], 1
+  2937 00001784 745C                    je fullcalc
+  2938                                 
+  2939 00001786 837D0402                cmp dword [ebp + 4], 2
+  2940 0000178A 7756                    ja fullcalc
+  2941                                 
+  2942 0000178C B8[00000000]            mov eax, temp
+  2943 00001791 8B5D0C                  mov ebx, dword[ebp + 4 * 3]
+  2944                                 
+  2945 00001794 E8F5E8FFFF              call compare
+  2946 00001799 83F901                  cmp ecx, 1
+  2947 0000179C 0F84A7010000            je temperature
+  2948                                 
+  2949 000017A2 B8[00000000]            mov eax, bsc
+  2950 000017A7 8B5D0C                  mov ebx, dword[ebp + 4 * 3]
+  2951                                 
+  2952 000017AA E8DFE8FFFF              call compare
+  2953 000017AF 83F901                  cmp ecx, 1
+  2954 000017B2 0F84EC000000            je basic
+  2955                                 
+  2956 000017B8 B8[00000000]            mov eax, ar
+  2957 000017BD 8B5D0C                  mov ebx, dword[ebp + 4 * 3]
+  2958                                 
+  2959 000017C0 E8C9E8FFFF              call compare
+  2960 000017C5 83F901                  cmp ecx, 1
+  2961 000017C8 0F8420020000            je area
+  2962                                 
+  2963 000017CE B8[00000000]            mov eax, vol
+  2964 000017D3 8B5D0C                  mov ebx, dword[ebp + 4 * 3]
+  2965                                 
+  2966 000017D6 E8B3E8FFFF              call compare
+  2967 000017DB 83F901                  cmp ecx, 1
+  2968 000017DE 0F84AF020000            je volume
+  2969                                 
+  2970                                 fullcalc :
+  2971                                 
+  2972 000017E4 B830000000              mov eax, 48
+  2973 000017E9 BB08000000              mov ebx, 8
+  2974 000017EE B9[00000000]            mov ecx, next_fullcalc
+  2975 000017F3 CD80                    int 80
+  2976                                 
+  2977 000017F5 B804000000              mov eax, 4
+  2978 000017FA BB01000000              mov ebx, 1
+  2979 000017FF B9[00000000]            mov ecx, msg1
+  2980 00001804 BAD7060000              mov edx, lmsg1
+  2981 00001809 CD80                    int 80
+  2982                                 
+  2983 0000180B E8DF030000              call _calc
+  2984 00001810 E8FDE7FFFF              call inputstring
+  2985                                 
+  2986 00001815 BB[00000000]            mov ebx, function
+  2987 0000181A E85DE8FFFF              call copystring
+  2988                                 
+  2989 0000181F E880F4FFFF              call f_temp
+  2990 00001824 83F801                  cmp eax, 1
+  2991 00001827 7566                    jne next_fullcalc
+  2992                                 
+  2993 00001829 E8D4EEFFFF              call f_volume
+  2994 0000182E 83F801                  cmp eax, 1
+  2995 00001831 755C                    jne next_fullcalc
+  2996                                 
+  2997 00001833 E8D2EBFFFF              call f_area
+  2998 00001838 83F801                  cmp eax, 1
+  2999 0000183B 7552                    jne next_fullcalc
+  3000                                 
+  3001 0000183D E8EEE9FFFF              call f_basic
+  3002 00001842 83F801                  cmp eax, 1
+  3003 00001845 7548                    jne next_fullcalc
+  3004                                 
+  3005 00001847 B8[00000000]            mov eax, close
+  3006 0000184C BB[00000000]            mov ebx, function
+  3007 00001851 E838E8FFFF              call compare
+  3008 00001856 83F901                  cmp ecx, 1
+  3009 00001859 0F8433040000            je exit
+  3010                                 
+  3011 0000185F B8[00000000]            mov eax, logs
+  3012 00001864 BB[00000000]            mov ebx, function
+  3013 00001869 E820E8FFFF              call compare
+  3014 0000186E 83F901                  cmp ecx, 1
+  3015 00001871 7426                    je readLog_fullcalc
+  3016                                 
+  3017 00001873 E88E030000              call clear_screen
+  3018 00001878 E8BC020000              call _notfound
+  3019                                 
+  3020 0000187D E95DFFFFFF              jmp fullcalc
+  3021                                 
+  3022                                 hendledFPE_fc :
+  3023                                 
+  3024 00001882 E87F030000              call clear_screen
+  3025 00001887 E8F0030000              call FPE
+  3026 0000188C E94EFFFFFF              jmp fullcalc
+  3027                                 
+  3028                                 next_fullcalc :
+  3029                                 
+  3030 00001891 E870030000              call clear_screen
+  3031 00001896 E944FFFFFF              jmp fullcalc
+  3032                                 
+  3033                                 readLog_fullcalc :
+  3034                                 
+  3035 0000189B E866030000              call clear_screen
+  3036 000018A0 E838FEFFFF              call log_open
+  3037 000018A5 E935FFFFFF              jmp fullcalc
+  3038                                 
+  3039                                 
+  3040                                 basic :
+  3041                                 
+  3042 000018AA B830000000              mov eax, 48
+  3043 000018AF BB08000000              mov ebx, 8
+  3044 000018B4 B9[00000000]            mov ecx, hendledFPE_bsc
+  3045 000018B9 CD80                    int 80
+  3046                                 
+  3047 000018BB B804000000              mov eax, 4
+  3048 000018C0 BB01000000              mov ebx, 1
+  3049 000018C5 B9[00000000]            mov ecx, msg2
+  3050 000018CA BAAC000000              mov edx, lmsg2
+  3051 000018CF CD80                    int 80
+  3052                                 
+  3053 000018D1 E819030000              call _calc
+  3054 000018D6 E837E7FFFF              call inputstring
+  3055                                 
+  3056 000018DB BB[00000000]            mov ebx, function
+  3057 000018E0 E897E7FFFF              call copystring
+  3058                                 
+  3059 000018E5 B8[00000000]            mov eax, close
+  3060 000018EA BB[00000000]            mov ebx, function
+  3061 000018EF E89AE7FFFF              call compare
+  3062 000018F4 83F901                  cmp ecx, 1
+  3063 000018F7 0F8495030000            je exit
+  3064                                 
+  3065 000018FD E82EE9FFFF              call f_basic
+  3066                                 
+  3067 00001902 83F801                  cmp eax, 1
+  3068 00001905 752D                    jne next_basic
+  3069                                 
+  3070 00001907 B8[00000000]            mov eax, logs
+  3071 0000190C BB[00000000]            mov ebx, function
+  3072 00001911 E878E7FFFF              call compare
+  3073 00001916 83F901                  cmp ecx, 1
+  3074 00001919 7423                    je readLog_basic
+  3075                                 
+  3076 0000191B E8E6020000              call clear_screen
+  3077 00001920 E814020000              call _notfound
+  3078                                 
+  3079 00001925 EB81                    jmp basic
+  3080                                 
+  3081                                 hendledFPE_bsc :
+  3082                                 
+  3083 00001927 E8DA020000              call clear_screen
+  3084 0000192C E84B030000              call FPE
+  3085 00001931 E96FFFFFFF              jmp basic
+  3086                                 
+  3087                                 next_basic :
+  3088                                 
+  3089 00001936 E8CB020000              call clear_screen
+  3090 0000193B E965FFFFFF              jmp basic
+  3091                                 
+  3092                                 readLog_basic :
+  3093                                 
+  3094 00001940 E8C1020000              call clear_screen
+  3095 00001945 E893FDFFFF              call log_open
+  3096 0000194A E956FFFFFF              jmp basic
+  3097                                 
+  3098                                 temperature :
+  3099                                 
+  3100 0000194F B830000000              mov eax, 48
+  3101 00001954 BB08000000              mov ebx, 8
+  3102 00001959 B9[00000000]            mov ecx, hendledFPE_temp
+  3103 0000195E CD80                    int 80
+  3104                                 
+  3105 00001960 B804000000              mov eax, 4
+  3106 00001965 BB01000000              mov ebx, 1
+  3107 0000196A B9[00000000]            mov ecx, msg3
+  3108 0000196F BAC8000000              mov edx, lmsg3
+  3109 00001974 CD80                    int 80
+  3110                                 
+  3111 00001976 E874020000              call _calc
+  3112 0000197B E892E6FFFF              call inputstring
+  3113                                 
+  3114 00001980 BB[00000000]            mov ebx, function
+  3115 00001985 E8F2E6FFFF              call copystring
+  3116                                 
+  3117 0000198A B8[00000000]            mov eax, close
+  3118 0000198F BB[00000000]            mov ebx, function
+  3119 00001994 E8F5E6FFFF              call compare
+  3120 00001999 83F901                  cmp ecx, 1
+  3121 0000199C 0F84F0020000            je exit
+  3122                                 
+  3123 000019A2 E8FDF2FFFF              call f_temp
+  3124                                 
+  3125 000019A7 83F801                  cmp eax, 1
+  3126 000019AA 752D                    jne next_temperature
+  3127                                 
+  3128 000019AC B8[00000000]            mov eax, logs
+  3129 000019B1 BB[00000000]            mov ebx, function
+  3130 000019B6 E8D3E6FFFF              call compare
+  3131 000019BB 83F901                  cmp ecx, 1
+  3132 000019BE 7423                    je readLog_tem
+  3133                                 
+  3134 000019C0 E841020000              call clear_screen
+  3135 000019C5 E86F010000              call _notfound
+  3136                                 
+  3137 000019CA EB81                    jmp temperature
+  3138                                 
+  3139                                 hendledFPE_temp :
+  3140                                 
+  3141 000019CC E835020000              call clear_screen
+  3142 000019D1 E8A6020000              call FPE
+  3143 000019D6 E96FFFFFFF              jmp temperature
+  3144                                 
+  3145                                 next_temperature :
+  3146                                 
+  3147 000019DB E826020000              call clear_screen
+  3148 000019E0 E965FFFFFF              jmp temperature
+  3149                                 
+  3150                                 readLog_tem :
+  3151                                 
+  3152 000019E5 E81C020000              call clear_screen
+  3153 000019EA E8EEFCFFFF              call log_open
+  3154 000019EF E956FFFFFF              jmp temperature
+  3155                                 
+  3156                                 
+  3157                                 area :
+  3158                                 
+  3159 000019F4 B830000000              mov eax, 48
+  3160 000019F9 BB08000000              mov ebx, 8
+  3161 000019FE B9[00000000]            mov ecx, hendledFPE_area
+  3162 00001A03 CD80                    int 80
+  3163                                 
+  3164 00001A05 B804000000              mov eax, 4
+  3165 00001A0A BB01000000              mov ebx, 1
+  3166 00001A0F B9[00000000]            mov ecx, msg4
+  3167 00001A14 BAE1010000              mov edx, lmsg4
+  3168 00001A19 CD80                    int 80
+  3169                                 
+  3170 00001A1B E8CF010000              call _calc
+  3171 00001A20 E8EDE5FFFF              call inputstring
+  3172                                 
+  3173 00001A25 BB[00000000]            mov ebx, function
+  3174 00001A2A E84DE6FFFF              call copystring
+  3175                                 
+  3176 00001A2F B8[00000000]            mov eax, close
+  3177 00001A34 BB[00000000]            mov ebx, function
+  3178 00001A39 E850E6FFFF              call compare
+  3179 00001A3E 83F901                  cmp ecx, 1
+  3180 00001A41 0F844B020000            je exit
+  3181                                 
+  3182 00001A47 E8BEE9FFFF              call f_area
+  3183                                 
+  3184 00001A4C 83F801                  cmp eax, 1
+  3185 00001A4F 752D                    jne next_area
+  3186                                 
+  3187 00001A51 B8[00000000]            mov eax, logs
+  3188 00001A56 BB[00000000]            mov ebx, function
+  3189 00001A5B E82EE6FFFF              call compare
+  3190 00001A60 83F901                  cmp ecx, 1
+  3191 00001A63 7423                    je readLog_area
+  3192                                 
+  3193 00001A65 E89C010000              call clear_screen
+  3194 00001A6A E8CA000000              call _notfound
+  3195                                 
+  3196 00001A6F EB81                    jmp area
+  3197                                 
+  3198                                 hendledFPE_area :
+  3199                                 
+  3200 00001A71 E890010000              call clear_screen
+  3201 00001A76 E801020000              call FPE
+  3202 00001A7B E96FFFFFFF              jmp area
+  3203                                 
+  3204                                 next_area :
+  3205                                 
+  3206 00001A80 E881010000              call clear_screen
+  3207 00001A85 E965FFFFFF              jmp area
+  3208                                 
+  3209                                 readLog_area :
+  3210                                 
+  3211 00001A8A E877010000              call clear_screen
+  3212 00001A8F E849FCFFFF              call log_open
+  3213 00001A94 E956FFFFFF              jmp area
+  3214                                 
+  3215                                 
+  3216                                 volume :
+  3217                                 
+  3218 00001A99 B830000000              mov eax, 48
+  3219 00001A9E BB08000000              mov ebx, 8
+  3220 00001AA3 B9[00000000]            mov ecx, hendledFPE_vol
+  3221 00001AA8 CD80                    int 80
+  3222                                 
+  3223 00001AAA B804000000              mov eax, 4
+  3224 00001AAF BB01000000              mov ebx, 1
+  3225 00001AB4 B9[00000000]            mov ecx, msg5
+  3226 00001AB9 BACA030000              mov edx, lmsg5
+  3227 00001ABE CD80                    int 80
+  3228                                 
+  3229 00001AC0 E82A010000              call _calc
+  3230 00001AC5 E848E5FFFF              call inputstring
+  3231                                 
+  3232 00001ACA BB[00000000]            mov ebx, function
+  3233 00001ACF E8A8E5FFFF              call copystring
+  3234                                 
+  3235 00001AD4 B8[00000000]            mov eax, close
+  3236 00001AD9 BB[00000000]            mov ebx, function
+  3237 00001ADE E8ABE5FFFF              call compare
+  3238 00001AE3 83F901                  cmp ecx, 1
+  3239 00001AE6 0F84A6010000            je exit
+  3240                                 
+  3241 00001AEC E811ECFFFF              call f_volume
+  3242                                 
+  3243 00001AF1 83F801                  cmp eax, 1
+  3244 00001AF4 752D                    jne next_volume
+  3245                                 
+  3246 00001AF6 B8[00000000]            mov eax, logs
+  3247 00001AFB BB[00000000]            mov ebx, function
+  3248 00001B00 E889E5FFFF              call compare
+  3249 00001B05 83F901                  cmp ecx, 1
+  3250 00001B08 7423                    je readLog_volume
+  3251                                 
+  3252 00001B0A E8F7000000              call clear_screen
+  3253 00001B0F E825000000              call _notfound
+  3254                                 
+  3255 00001B14 EB81                    jmp volume
+  3256                                 
+  3257                                 hendledFPE_vol :
+  3258                                 
+  3259 00001B16 E8EB000000              call clear_screen
+  3260 00001B1B E85C010000              call FPE
+  3261 00001B20 E96FFFFFFF              jmp volume
+  3262                                 
+  3263                                 next_volume :
+  3264                                 
+  3265 00001B25 E8DC000000              call clear_screen
+  3266 00001B2A E965FFFFFF              jmp volume
+  3267                                 
+  3268                                 readLog_volume :
+  3269                                 
+  3270 00001B2F E8D2000000              call clear_screen
+  3271 00001B34 E8A4FBFFFF              call log_open
+  3272 00001B39 E956FFFFFF              jmp volume
+  3273                                 
+  3274                                 
+  3275                                 _notfound :
+  3276                                 
+  3277 00001B3E B804000000              mov eax, 4
+  3278 00001B43 BB01000000              mov ebx, 1
+  3279 00001B48 B9[00000000]            mov ecx, red
+  3280 00001B4D BA06000000              mov edx, lred
+  3281 00001B52 CD80                    int 80
+  3282                                 
+  3283 00001B54 B804000000              mov eax, 4
+  3284 00001B59 BB01000000              mov ebx, 1
+  3285 00001B5E B9[00000000]            mov ecx, notfound
+  3286 00001B63 BA59000000              mov edx, lnotfound
+  3287 00001B68 CD80                    int 80
+  3288                                 
+  3289 00001B6A B804000000              mov eax, 4
+  3290 00001B6F BB01000000              mov ebx, 1
+  3291 00001B74 B9[00000000]            mov ecx, white
+  3292 00001B79 BA06000000              mov edx, lwhite
+  3293 00001B7E CD80                    int 80
+  3294                                 
+  3295 00001B80 C3                      ret
+  3296                                 
+  3297                                 _result :
+  3298                                 
+  3299 00001B81 B804000000              mov eax, 4
+  3300 00001B86 BB01000000              mov ebx, 1
+  3301 00001B8B B9[00000000]            mov ecx, result
+  3302 00001B90 BA09000000              mov edx, lresult
+  3303 00001B95 CD80                    int 80
+  3304                                 
+  3305 00001B97 C3                      ret
+  3306                                 
+  3307                                 kelvin :
+  3308                                 
+  3309 00001B98 B804000000              mov eax, 4
+  3310 00001B9D BB01000000              mov ebx, 1
+  3311 00001BA2 B9[00000000]            mov ecx, kel
+  3312 00001BA7 BA02000000              mov edx, lkel
+  3313 00001BAC CD80                    int 80
+  3314                                 
+  3315                                 
+  3316 00001BAE C3                      ret
+  3317                                 
+  3318                                 celcius :
+  3319                                 
+  3320 00001BAF B804000000              mov eax, 4
+  3321 00001BB4 BB01000000              mov ebx, 1
+  3322 00001BB9 B9[00000000]            mov ecx, cel
+  3323 00001BBE BA04000000              mov edx, lcel
+  3324 00001BC3 CD80                    int 80
+  3325                                 
+  3326 00001BC5 C3                      ret
+  3327                                 
+  3328                                 fahrenheit :
+  3329                                 
+  3330 00001BC6 B804000000              mov eax, 4
+  3331 00001BCB BB01000000              mov ebx, 1
+  3332 00001BD0 B9[00000000]            mov ecx, fahr
+  3333 00001BD5 BA04000000              mov edx, lfahr
+  3334 00001BDA CD80                    int 80
+  3335                                 
+  3336 00001BDC C3                      ret
+  3337                                 
+  3338                                 reamur :
+  3339                                 
+  3340 00001BDD B804000000              mov eax, 4
+  3341 00001BE2 BB01000000              mov ebx, 1
+  3342 00001BE7 B9[00000000]            mov ecx, rea
+  3343 00001BEC BA04000000              mov edx, lrea
+  3344 00001BF1 CD80                    int 80
+  3345                                 
+  3346 00001BF3 C3                      ret
+  3347                                 
+  3348                                 _calc
+  3349                                 
+  3350 00001BF4 B804000000              mov eax, 4
+  3351 00001BF9 BB01000000              mov ebx, 1
+  3352 00001BFE B9[00000000]            mov ecx, calc
+  3353 00001C03 BA08000000              mov edx, lcalc
+  3354 00001C08 CD80                    int 80
+  3355                                 
+  3356 00001C0A C3                      ret
+  3357                                 
+  3358                                 clear_screen :
+  3359                                 
+  3360 00001C0B B804000000              mov eax, 4
+  3361 00001C10 BB01000000              mov ebx, 1
+  3362 00001C15 B9[00000000]            mov ecx, clr_scr
+  3363 00001C1A BA08000000              mov edx, len_clr_scr
+  3364 00001C1F CD80                    int 0x80
+  3365                                 
+  3366 00001C21 C3                      ret
+  3367                                 
+  3368                                 _space :
+  3369                                 
+  3370 00001C22 B804000000              mov eax, 4
+  3371 00001C27 8B1D[00000000]          mov ebx, [isilog]
+  3372 00001C2D B9[00000000]            mov ecx, spasi
+  3373 00001C32 BA01000000              mov edx, lspasi
+  3374 00001C37 CD80                    int 0x80
+  3375                                 
+  3376 00001C39 C3                      ret
+  3377                                 
+  3378                                 _newline :
+  3379                                 
+  3380 00001C3A B804000000              mov eax, 4
+  3381 00001C3F 8B1D[00000000]          mov ebx, [isilog]
+  3382 00001C45 B9[00000000]            mov ecx, newline
+  3383 00001C4A BA01000000              mov edx, lnewline
+  3384 00001C4F CD80                    int 0x80
+  3385                                 
+  3386 00001C51 C3                      ret
+  3387                                 
+  3388                                 _log_result :
+  3389                                 
+  3390 00001C52 B804000000              mov eax, 4
+  3391 00001C57 8B1D[00000000]          mov ebx, [isilog]
+  3392 00001C5D B9[00000000]            mov ecx, result
+  3393 00001C62 BA09000000              mov edx, lresult
+  3394 00001C67 CD80                    int 80
+  3395                                 
+  3396 00001C69 C3                      ret
+  3397                                 
+  3398                                 _n :
+  3399 00001C6A B804000000              mov eax, 4
+  3400 00001C6F BB01000000              mov ebx, 1
+  3401 00001C74 B9[00000000]            mov ecx, newline
+  3402 00001C79 BA01000000              mov edx, lnewline
+  3403 00001C7E CD80                    int 0x80
+  3404                                 
+  3405 00001C80 C3                      ret
+  3406                                 
+  3407                                 FPE :
+  3408                                 
+  3409 00001C81 B804000000              mov eax, 4
+  3410 00001C86 BB01000000              mov ebx, 1
+  3411 00001C8B B9[00000000]            mov ecx, FPEtext
+  3412 00001C90 BA67000000              mov edx, lFPEtext
+  3413 00001C95 CD80                    int 0x80
+  3414                                 
+  3415 00001C97 C3                      ret
+  3416                                 
+  3417                                 
+  3418                                 exit :
+  3419 00001C98 B801000000              mov eax, 1
+  3420 00001C9D BB00000000              mov ebx, 0
+  3421 00001CA2 CD80                    int 0x80
